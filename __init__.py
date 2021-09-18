@@ -36,12 +36,12 @@ from . object_properties_popup import DSC_OT_object_properties_popup
 
 
 bl_info = {
-    'name' : 'Driving Scenario Creator',
-    'author' : 'Johannes Schmitz',
+    'name' : 'Open Drive',
+    'author' : 'yangtian',
     'description' : 'Create OpenDRIVE and OpenSCENARIO based driving scenarios.',
     'blender' : (2, 93, 0),
     'version' : (0, 6, 0),
-    'location' : 'View3D > Sidebar > Driving Scenario Creator',
+    'location' : 'View3D > Sidebar > Open Drive',
     'warning' : '',
     'doc_url': '',
     'tracker_url': 'https://github.com/johschmitz/blender-driving-scenario-creator/issues',
@@ -55,8 +55,8 @@ custom_icons = None
 
 class DSC_PT_panel_create(bpy.types.Panel):
     bl_idname = 'DSC_PT_panel_create'
-    bl_label = 'Driving Scenario Creator'
-    bl_category = 'Driving Scenario Creator'
+    bl_label = 'Open Drive'
+    bl_category = 'Open Drive'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = 'objectmode'
@@ -65,6 +65,24 @@ class DSC_PT_panel_create(bpy.types.Panel):
         global custom_icons
 
         layout = self.layout
+
+        outerBox = layout.box()
+        outerBox.label(text='Map Primitives')
+
+        innerBox = outerBox.box()
+        innerBox.label(text='Road')
+        row = innerBox.row(align=True)
+        row.operator('dsc.draw_road', text='Draw Road', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.edit_road', text='Edit Road', icon_value=custom_icons['road_straight'].icon_id)
+
+        innerBox = outerBox.box()
+        innerBox.label(text='Junction')
+        row = innerBox.row(align=True)
+        row.operator('dsc.draw_junction', text='Draw Junction', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.edit_junction', text='Edit Junction', icon_value=custom_icons['road_straight'].icon_id)
+
         box = layout.box()
         box.label(text='Road primitives (OpenDRIVE)')
         row = box.row(align=True)
