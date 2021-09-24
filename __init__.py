@@ -33,6 +33,8 @@ from . trajectory_nurbs import DSC_OT_trajectory_nurbs
 from . trajectory_polyline import DSC_OT_trajectory_polyline
 from . object_properties import DSC_object_properties
 from . object_properties_popup import DSC_OT_object_properties_popup
+from . draw_road import DrawRoad
+from . draw_junction import DrawJunction
 
 
 bl_info = {
@@ -150,6 +152,8 @@ classes = (
     DSC_road_properties,
     DSC_object_properties,
     DSC_OT_object_properties_popup,
+    DrawRoad,
+    DrawJunction
 )
 
 def register():

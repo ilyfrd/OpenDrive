@@ -11,7 +11,7 @@ def generate_vertices_from_arc(arc):
     divisions = ceil(arc_radian / plan_radian_per_division)
     actual_radian_per_division = arc_radian / divisions
 
-    vertices.append(arc['startPoint'])
+    vertices.append(arc['startPoint'].copy())
 
     center_to_start_point_vector = arc['startPoint'] - center_point
     for i in range(1, divisions):
@@ -19,7 +19,7 @@ def generate_vertices_from_arc(arc):
         current_point = center_point + current_vector
         vertices.append(current_point)
 
-    vertices.append(arc['endPoint'])
+    vertices.append(arc['endPoint'].copy())
 
     return vertices
 

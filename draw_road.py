@@ -2,10 +2,12 @@ import bpy
 import bmesh
 from mathutils import Vector, Matrix
 
-from math import fabs
+from math import fabs, dist
 
 from . import helpers
 from . import utils
+from . import math_utils
+
 
 
 
@@ -15,20 +17,23 @@ class DrawRoad(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def __init__(self):
-        self.mesh_object = None
+        self.road_object = None
 
-        self.lastPoint = None
+        self.last_selected_point = None
         self.raycast_point = None
+        self.varing_element_was_set = False
         self.reference_line_elements = []
         self.current_element = {
             'type': 'line',
-            'startPoint': None,
-            'startTangent': None,
-            'endPoint': None,
-            'endTangent': None
+            'start_point': None,
+            'start_tangent': None,
+            'end_point': None,
+            'end_tangent': None
         }
 
         self.lane_sections = []
+
+        self.lane_to_object_map = {} # key是(lane_section_index, lane_id)， value是lane_object
 
     @classmethod
     def poll(cls, context):
@@ -45,42 +50,75 @@ class DrawRoad(bpy.types.Operator):
             Create a stencil object with fake user or find older one in bpy data and
             relink to scene currently only support OBJECT mode.
         '''
-        mesh = bpy.data.meshes.new("mesh_object")
-        vertices, edges, faces = self.get_initial_vertices_edges_faces()
-        mesh.from_pydata(vertices, edges, faces)
-        self.mesh_object = bpy.data.objects.new("mesh_object", mesh)
+        self.create_default_lane_section()
 
-        context.scene.collection.objects.link(self.mesh_object)
-        helpers.select_activate_object(context, self.mesh_object)
+        self.road_object = bpy.data.objects.new('road_object', None)
+        context.scene.collection.objects.link(self.road_object)
+
+        lane_mesh = self.create_lane_mesh(self.lane_sections[0]['lanes'][1], self.lane_sections[0]['lanes'][0])
+        lane_object = bpy.data.objects.new('lane_object', lane_mesh)
+        lane_object.parent = self.road_object
+        context.scene.collection.objects.link(lane_object)
+
+        self.lane_to_object_map[(0, 1)] = lane_object
+
+        lane_mesh = self.create_lane_mesh(self.lane_sections[0]['lanes'][0], self.lane_sections[0]['lanes'][-1])
+        lane_object = bpy.data.objects.new('lane_object', lane_mesh)
+        lane_object.parent = self.road_object
+        context.scene.collection.objects.link(lane_object)
+
+        self.lane_to_object_map[(0, -1)] = lane_object
+
+        helpers.select_activate_object(context, self.road_object)
 
     def update_default_road(self):
         '''
             默认创建的road是双向双车道。
         '''
-        self.create_or_update_default_lane_section()
+        self.update_default_lane_section()
 
+        lane_object = self.lane_to_object_map[(0, 1)]
+        lane_mesh = self.create_lane_mesh(self.lane_sections[0]['lanes'][1], self.lane_sections[0]['lanes'][0])
+        helpers.replace_mesh(lane_object, lane_mesh)
+
+        lane_object = self.lane_to_object_map[(0, -1)]
+        lane_mesh = self.create_lane_mesh(self.lane_sections[0]['lanes'][0], self.lane_sections[0]['lanes'][-1])
+        helpers.replace_mesh(lane_object, lane_mesh)
+
+    def remove_default_road(self):
+        '''
+            Unlink stencil, needs to be in OBJECT mode.
+        '''
+        bpy.data.objects.remove(self.lane_to_object_map[(0, 1)], do_unlink=True)
+        bpy.data.objects.remove(self.lane_to_object_map[(0, -1)], do_unlink=True)
+        bpy.data.objects.remove(self.road_object, do_unlink=True)
+
+    def xxxxxxx(self):
         for lane_section in self.lane_sections:
             for lane_id in range(lane_section['left_most_lane_index'], 0, -1):
                 self.create_lane_mesh(lane_section['lanes'][lane_id], lane_section['lanes'][lane_id - 1])
             for lane_id in range(lane_section['right_most_lane_index'], 0, 1):
                 self.create_lane_mesh(lane_section['lanes'][lane_id + 1], lane_section['lanes'][lane_id])
 
-        helpers.replace_mesh(self.mesh_object, mesh)
-        
     def remove_duplicated_point(self, vertices):
-        for index in range(1, vertices.count()):
-            if fabs(vertices[index] - vertices[index - 1]) < 0.000001:
-                vertices.pop(index)
+        result = []
+        result.append(vertices[0])
+
+        for index in range(1, len(vertices)):
+            if dist(vertices[index], vertices[index - 1]) > 0.000001:
+                result.append(vertices[index])
+
+        return result
 
     def generate_vertices_from_lane_boundary(self, lane_boundary):
         vertices = []
         for element in lane_boundary:
             if element['type'] == 'line':
-                vertices.append(element['startPoint'])
-                vertices.append(element['endPoint'])
+                vertices.append(element['start_point'].copy())
+                vertices.append(element['end_point'].copy())
             elif element['type'] == 'arc':
                 arc_vertices = utils.generate_vertices_from_arc(element)
-                vertices.append(arc_vertices)
+                vertices.append(arc_vertices.copy())
         return vertices
 
     def create_lane_mesh(self, up_boundary, down_boundary):
@@ -104,7 +142,7 @@ class DrawRoad(bpy.types.Operator):
         vertices.append(down_boundary_vertices[0])
 
         max_vertice_index = 1
-        while quadrilateral_loop_up_index < up_boundary_vertices.count() and quadrilateral_loop_down_index < down_boundary_vertices.count():
+        while quadrilateral_loop_up_index < len(up_boundary_vertices) and quadrilateral_loop_down_index < len(down_boundary_vertices):
             vertices.append(down_boundary_vertices[quadrilateral_loop_down_index])
             max_vertice_index += 1
             quadrilateral_right_down_point_index = max_vertice_index
@@ -113,15 +151,15 @@ class DrawRoad(bpy.types.Operator):
             max_vertice_index += 1
             quadrilateral_right_up_point_index = max_vertice_index
 
-            edges.append((quadrilateral_left_up_point_index, quadrilateral_left_down_point_index),
-                            (quadrilateral_left_down_point_index, quadrilateral_right_down_point_index),
-                            (quadrilateral_right_down_point_index, quadrilateral_right_up_point_index),
-                            (quadrilateral_right_up_point_index, quadrilateral_left_up_point_index))
+            edges.append((quadrilateral_left_up_point_index, quadrilateral_left_down_point_index))
+            edges.append((quadrilateral_left_down_point_index, quadrilateral_right_down_point_index))
+            edges.append((quadrilateral_right_down_point_index, quadrilateral_right_up_point_index))
+            edges.append((quadrilateral_right_up_point_index, quadrilateral_left_up_point_index))
 
             faces.append((quadrilateral_left_up_point_index, 
-                            quadrilateral_left_down_point_index, 
-                            quadrilateral_right_down_point_index, 
-                            quadrilateral_right_up_point_index))
+                          quadrilateral_left_down_point_index, 
+                          quadrilateral_right_down_point_index, 
+                          quadrilateral_right_up_point_index))
             
             quadrilateral_left_up_point_index = quadrilateral_right_up_point_index
             quadrilateral_left_down_point_index = quadrilateral_right_down_point_index
@@ -137,26 +175,26 @@ class DrawRoad(bpy.types.Operator):
         boundary_has_more_vertices = ''
         triangle_loop_index = 0
 
-        if quadrilateral_loop_up_index >= up_boundary_vertices.count():
-            boundary_has_more_vertices = 'down_boundary'
-            triangle_loop_index = quadrilateral_loop_down_index
-        elif quadrilateral_loop_down_index >= down_boundary_vertices.count():
+        if len(up_boundary_vertices) > quadrilateral_loop_up_index:
             boundary_has_more_vertices = 'up_boundary'
             triangle_loop_index = quadrilateral_loop_up_index
+        elif len(down_boundary_vertices) > quadrilateral_loop_down_index:
+            boundary_has_more_vertices = 'down_boundary'
+            triangle_loop_index = quadrilateral_loop_down_index
 
         if boundary_has_more_vertices == 'up_boundary':
-            while triangle_loop_index < up_boundary_vertices.count():
+            while triangle_loop_index < len(up_boundary_vertices):
                 vertices.append(up_boundary_vertices[triangle_loop_index])
                 max_vertice_index += 1
                 triangle_right_point_index = max_vertice_index
 
-                edges.append((triangle_left_up_point_index, triangle_left_down_point_index),
-                                (triangle_left_down_point_index, triangle_right_point_index),
-                                (triangle_right_point_index, triangle_left_up_point_index))
+                edges.append((triangle_left_up_point_index, triangle_left_down_point_index))
+                edges.append((triangle_left_down_point_index, triangle_right_point_index))
+                edges.append((triangle_right_point_index, triangle_left_up_point_index))
 
                 faces.append((triangle_left_up_point_index, 
-                                triangle_left_down_point_index, 
-                                triangle_right_point_index))
+                              triangle_left_down_point_index, 
+                              triangle_right_point_index))
 
                 triangle_left_up_point_index = triangle_right_point_index
 
@@ -166,19 +204,19 @@ class DrawRoad(bpy.types.Operator):
                 max_vertice_index += 1
                 triangle_right_point_index = max_vertice_index
 
-                edges.append((triangle_left_up_point_index, triangle_left_down_point_index),
-                                (triangle_left_down_point_index, triangle_right_point_index),
-                                (triangle_right_point_index, triangle_left_up_point_index))
+                edges.append((triangle_left_up_point_index, triangle_left_down_point_index))
+                edges.append((triangle_left_down_point_index, triangle_right_point_index))
+                edges.append((triangle_right_point_index, triangle_left_up_point_index))
 
                 faces.append((triangle_left_up_point_index, 
-                                triangle_left_down_point_index, 
-                                triangle_right_point_index))
+                              triangle_left_down_point_index, 
+                              triangle_right_point_index))
 
                 triangle_left_down_point_index = triangle_right_point_index
 
                 triangle_loop_index += 1
 
-        mesh = bpy.data.meshes.new('default_road')
+        mesh = bpy.data.meshes.new('lane_mesh')
         mesh.from_pydata(vertices, edges, faces)
         return mesh
 
@@ -199,29 +237,30 @@ class DrawRoad(bpy.types.Operator):
         mat_rotation = Matrix.Rotation(heading, 4, 'Z')
         obj.matrix_world = mat_translation @ mat_rotation
 
-    def create_or_update_default_lane_section(self):
+    def create_default_lane_section(self):
+        default_lane_section = {
+            'lanes': {},
+            'left_most_lane_index': 0,
+            'right_most_lane_index': 0
+        }
+        self.lane_sections.append(default_lane_section)
+
+        self.lane_sections[0]['lanes'][0] = self.reference_line_elements #中心车道
+
         default_lane_width = 3
+        self.add_lane(0, 'left', default_lane_width)
+        self.add_lane(0, 'right', default_lane_width)
 
-        if self.lane_sections.count == 0: # 创建默认车道段
-            default_lane_section = {
-                'lanes': [],
-                'left_most_lane_index': 0,
-                'right_most_lane_index': 0
-            }
-            self.lane_sections[0] = default_lane_section
+    def update_default_lane_section(self):
+        self.lane_sections[0]['left_most_lane_index'] = 0
+        self.lane_sections[0]['right_most_lane_index'] = 0
 
-            self.lane_sections[0]['lanes'][0] = self.reference_line_elements #中心车道
-            self.add_lane(0, 'left', default_lane_width)
-            self.add_lane(0, 'right', default_lane_width)
-        else: # 更新默认车道段
-            self.lane_sections[0]['left_most_lane_index'] = 0
-            self.lane_sections[0]['right_most_lane_index'] = 0
+        del self.lane_sections[0]['lanes'][1]
+        del self.lane_sections[0]['lanes'][-1]
 
-            del self.lane_sections[0]['lanes'][1]
-            del self.lane_sections[0]['lanes'][-1]
-
-            self.add_lane(0, 'left', default_lane_width)
-            self.add_lane(0, 'right', default_lane_width)
+        default_lane_width = 3
+        self.add_lane(0, 'left', default_lane_width)
+        self.add_lane(0, 'right', default_lane_width)
 
     def merge_lane_section(self):
         '''
@@ -251,22 +290,42 @@ class DrawRoad(bpy.types.Operator):
         normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
         reference_lane = self.lane_sections[lane_section_index]['lanes'][reference_lane_id]
 
+        def generate_new_point(origin, tangent):
+            normal_vector = normal_vector_of_xy_plane.cross(tangent).normalized()
+            normal_vector[0] *= offset
+            normal_vector[1] *= offset
+            normal_vector[2] *= offset
+
+            if direction_factor == -1:
+                normal_vector.negate()
+
+            new_point = Vector((0.0, 0.0, 0.0))
+            new_point[0] = origin[0] + normal_vector[0]
+            new_point[1] = origin[1] + normal_vector[1]
+            new_point[2] = origin[2] + normal_vector[2]
+
+            return new_point
+
         new_lane = []
         for element in reference_lane:
-            new_element = None
+            new_element = {}
 
             if element['type'] == 'line':
                 new_element['type'] = 'line'
-                new_element['startPoint'] = element['startPoint'] + direction_factor * offset * normal_vector_of_xy_plane.cross(element['startTangent']).normalize()
-                new_element['startTangent'] = element['startTangent']
-                new_element['endPoint'] = element['endPoint'] + direction_factor * offset * normal_vector_of_xy_plane.cross(element['endTangent']).normalize()
-                new_element['endTangent'] = element['endTangent']
+                new_element['start_point'] = generate_new_point(element['start_point'], element['start_tangent'])
+
+                new_element['start_tangent'] = element['start_tangent']
+                new_element['end_point'] = generate_new_point(element['end_point'], element['end_tangent'])
+
+                new_element['end_tangent'] = element['end_tangent']
             elif element['type'] == 'arc':
                 new_element['type'] = 'arc'
-                new_element['startPoint'] = element['startPoint'] + direction_factor * offset * normal_vector_of_xy_plane.cross(element['startTangent']).normalize()
-                new_element['startTangent'] = element['startTangent']
-                new_element['endPoint'] = element['endPoint'] + direction_factor * offset * normal_vector_of_xy_plane.cross(element['endTangent']).normalize()
-                new_element['endTangent'] = element['endTangent']
+                new_element['start_point'] = generate_new_point(element['start_point'], element['start_tangent'])
+
+                new_element['start_tangent'] = element['start_tangent']
+                new_element['end_point'] = generate_new_point(element['end_point'], element['end_tangent'])
+
+                new_element['end_tangent'] = element['end_tangent']
         
             new_lane.append(new_element)
 
@@ -283,49 +342,79 @@ class DrawRoad(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':
             self.raycast_point = helpers.mouse_to_xy_plane(context, event)
 
-            if self.mesh_object is None:
+            if self.last_selected_point is None: # 道路参考线的第一个顶点尚未确定。
+                return {'RUNNING_MODAL'} 
+
+            if dist(self.last_selected_point, self.raycast_point) < 0.0001:
+                return {'RUNNING_MODAL'} 
+
+            self.current_element['start_point'] = self.last_selected_point
+            self.current_element['end_point'] = self.raycast_point
+            if self.current_element['type'] == 'line':
+                tangent = math_utils.vector_subtract(self.current_element['end_point'], self.current_element['start_point'])
+                self.current_element['start_tangent'] = tangent
+                self.current_element['end_tangent'] = tangent
+            elif self.current_element['type'] == 'arc':
+                self.current_element['start_tangent'] = self.reference_line_elements[len(self.reference_line_elements) - 1]['end_tangent']
+                self.current_element['end_tangent'] = self.computer_arc_end_tangent(self.current_element['start_point'],
+                                                                                    self.current_element['start_tangent'],
+                                                                                    self.current_element['end_point'])
+            if self.varing_element_was_set == False:
+                self.reference_line_elements.append(self.current_element.copy())
+                self.varing_element_was_set = True
+            else:
+                varing_element = self.reference_line_elements[len(self.reference_line_elements) - 1]
+                varing_element['type'] = self.current_element['type']
+                varing_element['start_point'] = self.current_element['start_point'].copy()
+                varing_element['end_point'] = self.current_element['end_point'].copy()
+                varing_element['start_tangent'] = self.current_element['start_tangent'].copy()
+                varing_element['end_tangent'] = self.current_element['end_tangent'].copy()
+
+            if self.road_object is None:
                 self.create_default_road(context)
 
             self.update_default_road()
 
-        elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-            if self.lastPoint is None: #第一次下点。
-                if self.current_element['type'] != 'arc': #第一个元素必须是line，因为如果是arc，则该arc起始点处的切线方向是不确定的。
-                    self.lastPoint = self.raycast_point
-            else:
-                self.current_element['startPoint'] = self.lastPoint
-                self.current_element['endPoint'] = self.raycast_point
-                if self.current_element['type'] == 'line':
-                    tangent = self.current_element['endPoint'] - self.current_element['startPoint']
-                    self.current_element['startTangent'] = tangent
-                    self.current_element['endTangent'] = tangent
-                elif self.current_element['type'] == 'arc':
-                    self.current_element['startTangent'] = self.reference_line_elements[self.reference_line_elements.count() - 1]['endTangent']
-                    self.current_element['endTangent'] = self.computer_arc_end_tangent(
-                                                            self.current_element['startPoint'],
-                                                            self.current_element['startTangent'],
-                                                            self.current_element['endPoint'])
+            return {'RUNNING_MODAL'}
 
-                self.reference_line_elements.append(self.current_element)
+        elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+            if self.last_selected_point is None: # 第一次下点
+                self.last_selected_point = self.raycast_point
+                return {'RUNNING_MODAL'}
+
+            self.varing_element_was_set = False
+            self.last_selected_point = self.raycast_point
 
             return {'RUNNING_MODAL'}
-        # Cancel step by step
+
         elif event.type in {'RIGHTMOUSE'} and event.value in {'RELEASE'}:
-            # Back to beginning
-            if self.state == 'SELECT_END':
-                self.remove_stencil()
-                self.state = 'INIT'
+            current_element_number = len(self.reference_line_elements)
+            if current_element_number < 2:
                 return {'RUNNING_MODAL'}
-            # Exit
-            if self.state == 'SELECT_START':
-                self.clean_up(context)
-                return {'FINISHED'}
-        # Exit immediately
+
+            self.last_selected_point = self.reference_line_elements[current_element_number - 2]['start_point']
+            self.reference_line_elements.pop()
+            self.reference_line_elements.pop()
+            self.varing_element_was_set = False
+
+            return {'RUNNING_MODAL'}
+
         elif event.type in {'ESC'}:
+            current_element_number = len(self.reference_line_elements)
+            if current_element_number <= 1:
+                self.remove_default_road()
+            else:
+                self.reference_line_elements.pop(current_element_number - 1)
+                self.update_default_road()
+
             self.clean_up(context)
+
             return {'FINISHED'}
+            
         elif event.type in {'LEFT_SHIFT'}:
-            if self.current_element['type'] == 'line':
+            if self.curifrent_element['type'] == 'line':
+                if len(self.reference_line_elements) <= 1:
+                    return {'RUNNING_MODAL'} # 第一个元素必须是line，因为如果是arc，则该arc起始点处的切线方向是不确定的。
                 self.current_element['type'] = 'arc'
             else:
                 self.current_element['type'] = 'line'
@@ -349,17 +438,13 @@ class DrawRoad(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def clean_up(self, context):
-        # Make sure stencil is removed
-        self.remove_stencil()
-        # Remove header text with 'None'
         context.workspace.status_text_set(None)
-        # Set custom cursor
+
         bpy.context.window.cursor_modal_restore()
-        # Make sure to exit edit mode
+
         if bpy.context.active_object:
             if bpy.context.active_object.mode == 'EDIT':
                 bpy.ops.object.mode_set(mode='OBJECT')
-        self.state = 'INIT'
 
     def computer_arc_end_tangent(self, start_point, start_tangent, end_point):
         normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
