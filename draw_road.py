@@ -1,14 +1,12 @@
 import bpy
 import bmesh
-from mathutils import Vector, Matrix
-
-from math import fabs, dist
+from mathutils import Vector, Matrix, geometry
+from math import fabs, dist, acos
 
 from . import helpers
 from . import utils
 from . import math_utils
-
-
+from . import debug_utils
 
 
 class DrawRoad(bpy.types.Operator):
@@ -118,7 +116,7 @@ class DrawRoad(bpy.types.Operator):
                 vertices.append(element['end_point'].copy())
             elif element['type'] == 'arc':
                 arc_vertices = utils.generate_vertices_from_arc(element)
-                vertices.append(arc_vertices.copy())
+                vertices.extend(arc_vertices)
         return vertices
 
     def create_lane_mesh(self, up_boundary, down_boundary):
@@ -220,15 +218,6 @@ class DrawRoad(bpy.types.Operator):
         mesh.from_pydata(vertices, edges, faces)
         return mesh
 
-    def get_initial_vertices_edges_faces(self):
-        '''
-            Calculate and return the vertices, edges and faces to create the initial stencil mesh.
-        '''
-        vertices = [(0.0, 0.0, 0.0)]
-        edges = []
-        faces = []
-        return vertices, edges, faces
-
     def transform_object_wrt_start(self, obj, point_start, heading):
         '''
             Translate and rotate object.
@@ -292,9 +281,7 @@ class DrawRoad(bpy.types.Operator):
 
         def generate_new_point(origin, tangent):
             normal_vector = normal_vector_of_xy_plane.cross(tangent).normalized()
-            normal_vector[0] *= offset
-            normal_vector[1] *= offset
-            normal_vector[2] *= offset
+            math_utils.vector_scale(normal_vector, offset)
 
             if direction_factor == -1:
                 normal_vector.negate()
@@ -348,17 +335,29 @@ class DrawRoad(bpy.types.Operator):
             if dist(self.last_selected_point, self.raycast_point) < 0.0001:
                 return {'RUNNING_MODAL'} 
 
-            self.current_element['start_point'] = self.last_selected_point
-            self.current_element['end_point'] = self.raycast_point
+            current_element_number = len(self.reference_line_elements)
+
             if self.current_element['type'] == 'line':
+                self.current_element['start_point'] = self.last_selected_point
+
+                if current_element_number < 2:
+                    self.current_element['end_point'] = self.raycast_point
+                else:
+                    pre_element = self.reference_line_elements[current_element_number - 2]
+                    self.current_element['end_point'] = math_utils.project_point_onto_line(self.raycast_point, pre_element['end_point'], pre_element['end_tangent'])
+
                 tangent = math_utils.vector_subtract(self.current_element['end_point'], self.current_element['start_point'])
                 self.current_element['start_tangent'] = tangent
                 self.current_element['end_tangent'] = tangent
+
             elif self.current_element['type'] == 'arc':
-                self.current_element['start_tangent'] = self.reference_line_elements[len(self.reference_line_elements) - 1]['end_tangent']
+                self.current_element['start_point'] = self.last_selected_point
+                self.current_element['end_point'] = self.raycast_point
+                self.current_element['start_tangent'] = self.reference_line_elements[current_element_number - 2]['end_tangent']
                 self.current_element['end_tangent'] = self.computer_arc_end_tangent(self.current_element['start_point'],
                                                                                     self.current_element['start_tangent'],
                                                                                     self.current_element['end_point'])
+
             if self.varing_element_was_set == False:
                 self.reference_line_elements.append(self.current_element.copy())
                 self.varing_element_was_set = True
@@ -383,7 +382,7 @@ class DrawRoad(bpy.types.Operator):
                 return {'RUNNING_MODAL'}
 
             self.varing_element_was_set = False
-            self.last_selected_point = self.raycast_point
+            self.last_selected_point = self.current_element['end_point']
 
             return {'RUNNING_MODAL'}
 
@@ -411,8 +410,8 @@ class DrawRoad(bpy.types.Operator):
 
             return {'FINISHED'}
             
-        elif event.type in {'LEFT_SHIFT'}:
-            if self.curifrent_element['type'] == 'line':
+        elif event.type in {'LEFT_SHIFT'} and event.value in {'RELEASE'}:
+            if self.current_element['type'] == 'line':
                 if len(self.reference_line_elements) <= 1:
                     return {'RUNNING_MODAL'} # 第一个元素必须是line，因为如果是arc，则该arc起始点处的切线方向是不确定的。
                 self.current_element['type'] = 'arc'
@@ -433,6 +432,8 @@ class DrawRoad(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
+        debug_utils.set_context(context)
+
         bpy.ops.object.select_all(action='DESELECT')
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -445,11 +446,11 @@ class DrawRoad(bpy.types.Operator):
         if bpy.context.active_object:
             if bpy.context.active_object.mode == 'EDIT':
                 bpy.ops.object.mode_set(mode='OBJECT')
-
+ 
     def computer_arc_end_tangent(self, start_point, start_tangent, end_point):
         normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
         center_line_vector = normal_vector_of_xy_plane.cross(end_point - start_point)
         end_tangent = start_tangent.reflect(center_line_vector)
-        
+
         return end_tangent
 
