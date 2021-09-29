@@ -18,11 +18,13 @@ class DrawRoad(bpy.types.Operator):
 
     def __init__(self):
         self.road_object = None
+        self.road_reference_line_object = None
 
         self.last_selected_point = None
         self.raycast_point = None
         self.varing_element_was_set = False
         self.reference_line_elements = []
+        self.reference_line_segments = []
         self.current_element = {
             'type': 'line',
             'start_point': None,
@@ -39,16 +41,25 @@ class DrawRoad(bpy.types.Operator):
     def poll(cls, context):
         return context.area.type == 'VIEW_3D'
 
-    # def save_road_data(self):
+    def save_road_data(self):
+        road_data = {}
+        road_data['reference_line_segments'] = self.reference_line_segments
+        road_data['lane_sections'] = self.lane_sections
 
-    def create_reference_line(self, context):
-        left_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.5, 'left')
-        right_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.5, 'right')
+        map_scene_data.set_road_data(self.road_reference_line_object.name, road_data)
+
+    def create_road_reference_line(self, context):
+        left_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'left')
+        right_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'right')
         mesh = utils.create_band_mesh(left_side_curve, right_side_curve)
         object_name = 'reference_line_object_' + str(map_scene_data.generate_reference_line_object_id())
         object = bpy.data.objects.new(object_name, mesh)
+        object.location[2] += 0.02
+        object['type'] = 'road_reference_line'
         object.parent = self.road_object
         context.scene.collection.objects.link(object)
+
+        self.road_reference_line_object = object
 
     def create_default_road(self, context):
         '''
@@ -63,6 +74,7 @@ class DrawRoad(bpy.types.Operator):
         lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][1], self.lane_sections[0]['lanes'][0])
         lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
         lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
+        lane_object['type'] = 'lane'
         lane_object.parent = self.road_object
         context.scene.collection.objects.link(lane_object)
 
@@ -71,6 +83,7 @@ class DrawRoad(bpy.types.Operator):
         lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][0], self.lane_sections[0]['lanes'][-1])
         lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
         lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
+        lane_object['type'] = 'lane'
         lane_object.parent = self.road_object
         context.scene.collection.objects.link(lane_object)
 
@@ -118,17 +131,8 @@ class DrawRoad(bpy.types.Operator):
         obj.matrix_world = mat_translation @ mat_rotation
 
     def create_default_lane_section(self):
-        default_lane_section = {
-            'lanes': {},
-            'left_most_lane_index': 0,
-            'right_most_lane_index': 0
-        }
+        default_lane_section = utils.create_lane_section(self.reference_line_elements)
         self.lane_sections.append(default_lane_section)
-
-        self.lane_sections[0]['lanes'][0] = self.reference_line_elements #中心车道
-
-        self.add_lane(0, 'left')
-        self.add_lane(0, 'right')
 
     def update_default_lane_section(self):
         self.lane_sections[0]['left_most_lane_index'] = 0
@@ -137,8 +141,8 @@ class DrawRoad(bpy.types.Operator):
         del self.lane_sections[0]['lanes'][1]
         del self.lane_sections[0]['lanes'][-1]
 
-        self.add_lane(0, 'left')
-        self.add_lane(0, 'right')
+        utils.add_lane(self.lane_sections[0], 'left')
+        utils.add_lane(self.lane_sections[0], 'right')
 
     def merge_lane_section(self):
         '''
@@ -149,24 +153,6 @@ class DrawRoad(bpy.types.Operator):
         '''
             Translate and rotate object.
         '''
-
-    def add_lane(self, lane_section_index, direction):
-        reference_lane_id = 0
-        new_lane_id = 0
-        if direction == 'left':
-            reference_lane_id = self.lane_sections[lane_section_index]['left_most_lane_index']
-            new_lane_id = reference_lane_id + 1
-            self.lane_sections[lane_section_index]['left_most_lane_index'] = new_lane_id
-        else:
-            reference_lane_id = self.lane_sections[lane_section_index]['right_most_lane_index']
-            new_lane_id = reference_lane_id - 1
-            self.lane_sections[lane_section_index]['right_most_lane_index'] = new_lane_id
-
-        reference_lane = self.lane_sections[lane_section_index]['lanes'][reference_lane_id]
-
-        new_lane = utils.generate_new_curve_by_offset(reference_lane, 3, direction)
-
-        self.lane_sections[lane_section_index]['lanes'][new_lane_id] = new_lane
 
     def modal(self, context, event):
         context.workspace.status_text_set("Place object by clicking, hold CTRL to snap to grid, "
@@ -256,8 +242,10 @@ class DrawRoad(bpy.types.Operator):
                 self.reference_line_elements.pop(current_element_number - 1)
                 self.update_default_road()
 
-            self.create_reference_line(context)
-            
+            self.reference_line_segments.append(self.reference_line_elements)
+            self.create_road_reference_line(context)
+            self.save_road_data()
+
             self.clean_up(context)
 
             return {'FINISHED'}

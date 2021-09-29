@@ -34,6 +34,8 @@ from . trajectory_polyline import DSC_OT_trajectory_polyline
 from . object_properties import DSC_object_properties
 from . object_properties_popup import DSC_OT_object_properties_popup
 from . draw_road import DrawRoad
+from . segment_road import SegmentRoad
+
 from . draw_junction import DrawJunction
 
 
@@ -76,7 +78,7 @@ class DSC_PT_panel_create(bpy.types.Panel):
         row = innerBox.row(align=True)
         row.operator('dsc.draw_road', text='Draw Road', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
-        row.operator('dsc.edit_road', text='Edit Road', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.segment_road', text='Segment Road', icon_value=custom_icons['road_straight'].icon_id)
 
         innerBox = outerBox.box()
         innerBox.label(text='Junction')
@@ -153,6 +155,7 @@ classes = (
     DSC_object_properties,
     DSC_OT_object_properties_popup,
     DrawRoad,
+    SegmentRoad,
     DrawJunction
 )
 

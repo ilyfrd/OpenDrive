@@ -15,5 +15,10 @@ def generate_reference_line_object_id():
     reference_line_object_id += 1
     return reference_line_object_id
 
-def set_road_data(road_id, road_data):
-    road_map[road_id] = road_data
+def set_road_data(id, road_data):
+    road_map[id] = road_data
+
+def get_road_data(id):
+    return road_map.get(id)
+
+

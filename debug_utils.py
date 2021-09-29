@@ -1,5 +1,7 @@
 import bpy
+import random
 from mathutils import Vector
+
 from . import helpers
 
 debug_line_map = {}
@@ -48,6 +50,8 @@ def draw_debug_point(id, point):
     point_mesh = bpy.data.meshes.new('point_mesh')
     point_mesh.from_pydata(vertices, edges, faces)
 
+    point_object = None
+
     if id in debug_point_map:
         point_object = debug_point_map[id]
         helpers.replace_mesh(point_object, point_mesh)
@@ -55,3 +59,5 @@ def draw_debug_point(id, point):
         point_object = bpy.data.objects.new('point_object', point_mesh)
         current_context.scene.collection.objects.link(point_object)
         debug_point_map[id] = point_object
+
+    # point_object.rotation_euler[2] += random.randint(0, 360)
