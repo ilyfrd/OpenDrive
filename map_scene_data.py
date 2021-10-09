@@ -1,9 +1,14 @@
-
+road_id = 0
 lane_object_id = 0
 reference_line_object_id = 0
 
 
 road_map = {}
+
+def generate_road_id():
+    global road_id
+    road_id += 1
+    return road_id
 
 def generate_lane_object_id():
     global lane_object_id

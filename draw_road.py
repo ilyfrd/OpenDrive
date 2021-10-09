@@ -45,6 +45,8 @@ class DrawRoad(bpy.types.Operator):
         road_data = {}
         road_data['reference_line_segments'] = self.reference_line_segments
         road_data['lane_sections'] = self.lane_sections
+        road_data['lane_to_object_map'] = self.lane_to_object_map
+        road_data['road_object'] = self.road_object
 
         map_scene_data.set_road_data(self.road_reference_line_object.name, road_data)
 
@@ -54,7 +56,7 @@ class DrawRoad(bpy.types.Operator):
         mesh = utils.create_band_mesh(left_side_curve, right_side_curve)
         object_name = 'reference_line_object_' + str(map_scene_data.generate_reference_line_object_id())
         object = bpy.data.objects.new(object_name, mesh)
-        object.location[2] += 0.02
+        object.location[2] += 0.05
         object['type'] = 'road_reference_line'
         object.parent = self.road_object
         context.scene.collection.objects.link(object)
@@ -68,7 +70,8 @@ class DrawRoad(bpy.types.Operator):
         '''
         self.create_default_lane_section()
 
-        self.road_object = bpy.data.objects.new('road_object', None)
+        road_object_name = 'road_object_' + str(map_scene_data.generate_road_id())
+        self.road_object = bpy.data.objects.new(road_object_name, None)
         context.scene.collection.objects.link(self.road_object)
 
         lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][1], self.lane_sections[0]['lanes'][0])

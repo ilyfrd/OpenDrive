@@ -20,14 +20,56 @@ class SegmentRoad(bpy.types.Operator):
         self.reference_line_selected = False
         self.selected_object_name = ''
 
-        self.split_success = False
+        self.projected_point = None
         self.pre_segment = None
         self.next_segment = None
 
+    def refresh_segmenting(self, context):
+        road_data = map_scene_data.get_road_data(self.selected_object_name)
+        lane_to_object_map = road_data['lane_to_object_map']
+        lane_sections = road_data['lane_sections']
+        road_object = road_data['road_object']
+        reference_line_segments = road_data['reference_line_segments']
 
-    def refresh_segmenting(self):
-        '''
-        '''
+        for object in lane_to_object_map.values():
+            bpy.data.objects.remove(object, do_unlink=True)
+        lane_to_object_map.clear()
+
+        lane_sections.clear()
+
+        for index in range(0, len(reference_line_segments)):
+            lane_section = utils.create_lane_section(reference_line_segments[index])
+            lane_sections.append(lane_section)
+
+            lane_mesh = utils.create_band_mesh(lane_section['lanes'][1], lane_section['lanes'][0])
+            lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
+            lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
+            lane_object['type'] = 'lane'
+            lane_object.parent = road_object
+            context.scene.collection.objects.link(lane_object)
+
+            lane_to_object_map[(index, 1)] = lane_object
+
+            lane_mesh = utils.create_band_mesh(lane_section['lanes'][0], lane_section['lanes'][-1])
+            lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
+            lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
+            lane_object['type'] = 'lane'
+            lane_object.parent = road_object
+            context.scene.collection.objects.link(lane_object)
+
+            lane_to_object_map[(index, -1)] = lane_object
+
+        helpers.select_activate_object(context, road_object)
+
+    def draw_segmenting_line(self, raycast_point, projected_point):
+        projected_point_to_raycast_point_vector = math_utils.vector_subtract(raycast_point, projected_point)
+        projected_point_to_raycast_point_vector.normalize()
+        math_utils.vector_scale(projected_point_to_raycast_point_vector, 5)
+        one_side_point = math_utils.vector_add(projected_point, projected_point_to_raycast_point_vector)
+        math_utils.vector_scale(projected_point_to_raycast_point_vector, -1)
+        another_side_point = math_utils.vector_add(projected_point, projected_point_to_raycast_point_vector)
+
+        debug_utils.draw_debug_line('segmenting_line', one_side_point, another_side_point)
 
     @classmethod
     def poll(cls, context):
@@ -56,30 +98,45 @@ class SegmentRoad(bpy.types.Operator):
                 road_data = map_scene_data.get_road_data(self.selected_object_name)
                 reference_line_segments = road_data['reference_line_segments']
                 current_reference_line_segment = reference_line_segments[len(reference_line_segments) - 1]
-                self.split_success, self.pre_segment, self.next_segment = utils.split_reference_line_segment(current_reference_line_segment, raycast_point)
+                self.projected_point, self.pre_segment, self.next_segment = utils.split_reference_line_segment(current_reference_line_segment, raycast_point)
+
+                if self.projected_point != None:
+                    self.draw_segmenting_line(raycast_point, self.projected_point)
 
             return {'RUNNING_MODAL'}
 
         elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
             if self.selected_object_name != None:
                 self.reference_line_selected = True
-                return {'RUNNING_MODAL'}
 
-            if self.split_success:
+            if self.projected_point != None:
                 road_data = map_scene_data.get_road_data(self.selected_object_name)
                 reference_line_segments = road_data['reference_line_segments']
                 reference_line_segments.pop()
                 reference_line_segments.append(self.pre_segment)
                 reference_line_segments.append(self.next_segment)
 
+                self.refresh_segmenting(context)
+
             return {'RUNNING_MODAL'}
 
         elif event.type in {'RIGHTMOUSE'} and event.value in {'RELEASE'}:
-           
+            road_data = map_scene_data.get_road_data(self.selected_object_name)
+            reference_line_segments = road_data['reference_line_segments']
+            segments_count = len(reference_line_segments)
+
+            if segments_count >= 2:
+                merged_segment = utils.merge_reference_line_segment(reference_line_segments[segments_count-2], reference_line_segments[segments_count-1])
+                reference_line_segments.pop()
+                reference_line_segments.pop()
+                reference_line_segments.append(merged_segment)
+
+                self.refresh_segmenting(context)
 
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
+            debug_utils.remove_debug_line('segmenting_line')
            
             self.clean_up(context)
 

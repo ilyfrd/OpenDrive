@@ -79,10 +79,10 @@ def create_band_mesh(up_boundary, down_boundary):
         max_vertice_index += 1
         quadrilateral_right_up_point_index = max_vertice_index
 
-        edges.append((quadrilateral_left_up_point_index, quadrilateral_left_down_point_index))
-        edges.append((quadrilateral_left_down_point_index, quadrilateral_right_down_point_index))
-        edges.append((quadrilateral_right_down_point_index, quadrilateral_right_up_point_index))
-        edges.append((quadrilateral_right_up_point_index, quadrilateral_left_up_point_index))
+        # edges.append((quadrilateral_left_up_point_index, quadrilateral_left_down_point_index))
+        # edges.append((quadrilateral_left_down_point_index, quadrilateral_right_down_point_index))
+        # edges.append((quadrilateral_right_down_point_index, quadrilateral_right_up_point_index))
+        # edges.append((quadrilateral_right_up_point_index, quadrilateral_left_up_point_index))
 
         faces.append((quadrilateral_left_up_point_index, 
                         quadrilateral_left_down_point_index, 
@@ -116,9 +116,9 @@ def create_band_mesh(up_boundary, down_boundary):
             max_vertice_index += 1
             triangle_right_point_index = max_vertice_index
 
-            edges.append((triangle_left_up_point_index, triangle_left_down_point_index))
-            edges.append((triangle_left_down_point_index, triangle_right_point_index))
-            edges.append((triangle_right_point_index, triangle_left_up_point_index))
+            # edges.append((triangle_left_up_point_index, triangle_left_down_point_index))
+            # edges.append((triangle_left_down_point_index, triangle_right_point_index))
+            # edges.append((triangle_right_point_index, triangle_left_up_point_index))
 
             faces.append((triangle_left_up_point_index, 
                             triangle_left_down_point_index, 
@@ -276,6 +276,10 @@ def split_reference_line_segment(curve_elements, split_point):
         split_point_to_center_point_vector = math_utils.vector_subtract(center_point, split_point)
         tangent_at_split_point = normal_vector_of_xy_plane.cross(split_point_to_center_point_vector)
 
+        normal_vector =  arc['start_tangent'].cross(arc['end_tangent'])
+        if normal_vector.z > 0:
+            math_utils.vector_scale(tangent_at_split_point, -1)
+
         pre_arc = arc.copy()
         pre_arc['end_point'] = split_point.copy()
         pre_arc['end_tangent'] = tangent_at_split_point.copy()
@@ -286,28 +290,57 @@ def split_reference_line_segment(curve_elements, split_point):
 
         return pre_arc, next_arc
 
-    found_projected_point = False
+    projected_point = None
 
     for element in curve_elements:
-        if found_projected_point == True:
+        if projected_point != None:
             next_segment.append(element)
+            continue
 
         if element['type'] == 'line':
             projected_point = math_utils.project_point_onto_finite_line(split_point, element['start_point'], element['end_point'])
             if projected_point != None:
-                found_projected_point = True
                 pre_line, next_line = split_line(element, projected_point)
                 pre_segment.append(pre_line)
                 next_segment.append(next_line)
+            else:
+                pre_segment.append(element)
         elif element['type'] == 'arc':
             projected_point = math_utils.project_point_onto_finite_arc(split_point, element)
             if projected_point != None:
-                found_projected_point = True
                 pre_arc, next_arc = split_arc(element, projected_point)
                 pre_segment.append(pre_arc)
                 next_segment.append(next_arc)
+            else:
+                pre_segment.append(element)
 
-        pre_segment.append(element)
-    
-    return found_projected_point, pre_segment, next_segment
+    return projected_point, pre_segment, next_segment
+
+def merge_reference_line_segment(pre_segment, next_segment):
+    result_segment = []
+
+    pre_segment_len = len(pre_segment)
+    next_segment_len = len(next_segment)
+    pre_last_element = pre_segment[pre_segment_len - 1]
+    next_first_element = next_segment[0]
+
+    for index in range(0, pre_segment_len - 1):
+        result_segment.append(pre_segment[index])
+
+    merged_element = pre_last_element.copy()
+    merged_element['end_point'] = next_first_element['end_point']
+    merged_element['end_tangent'] = next_first_element['end_tangent']
+    result_segment.append(merged_element)
+
+    for index in range(1, next_segment_len):
+        result_segment.append(next_segment[index])
+
+    return result_segment
+
+
+        
+
+
+
+
 

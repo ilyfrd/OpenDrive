@@ -3,8 +3,11 @@ import random
 from mathutils import Vector
 
 from . import helpers
+from . import utils
+
 
 debug_line_map = {}
+debug_arc_map = {}
 debug_point_map = {}
 
 
@@ -13,6 +16,23 @@ current_context = None
 def set_context(context):
     global current_context
     current_context = context
+
+def draw_debug_arc(id, arc):
+    vertices = utils.generate_vertices_from_arc(arc)
+    edges = []
+    for index in range(0, len(vertices) - 1):
+        edges.append((index, index + 1))
+    faces = []
+    arc_mesh = bpy.data.meshes.new('arc_mesh')
+    arc_mesh.from_pydata(vertices, edges, faces)
+
+    if id in debug_arc_map:
+        arc_object = debug_arc_map[id]
+        helpers.replace_mesh(arc_object, arc_mesh)
+    else:
+        arc_object = bpy.data.objects.new('arc_object', arc_mesh)
+        current_context.scene.collection.objects.link(arc_object)
+        debug_arc_map[id] = arc_object
 
 def draw_debug_line(id, point_a, point_b):
     vertices = [point_a, point_b]
@@ -28,6 +48,12 @@ def draw_debug_line(id, point_a, point_b):
         line_object = bpy.data.objects.new('line_object', line_mesh)
         current_context.scene.collection.objects.link(line_object)
         debug_line_map[id] = line_object
+
+def remove_debug_line(id):
+    if id in debug_line_map:
+        segmenting_line = debug_line_map[id]
+        bpy.data.objects.remove(segmenting_line, do_unlink=True)
+        del debug_line_map[id]
 
 def draw_debug_point(id, point):
     point_magnitude = 3
