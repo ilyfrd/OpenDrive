@@ -26,6 +26,14 @@ def add_lane(lane_section, direction):
 
     lane_section['lanes'][new_lane_id] = new_lane
 
+def remove_lane(lane_section, lane_index):
+    lane_section['lanes'].pop(lane_index)
+
+    if lane_index > 0:
+        lane_section['left_most_lane_index'] -= 1 
+    else:
+        lane_section['right_most_lane_index'] += 1
+
 def create_lane_section(reference_line_elements):
     default_lane_section = {
         'lanes': {},

@@ -18,14 +18,14 @@ class SegmentRoad(bpy.types.Operator):
 
     def __init__(self):
         self.reference_line_selected = False
-        self.selected_object_name = ''
+        self.selected_road_id = 0
 
         self.projected_point = None
         self.pre_segment = None
         self.next_segment = None
 
     def refresh_segmenting(self, context):
-        road_data = map_scene_data.get_road_data(self.selected_object_name)
+        road_data = map_scene_data.get_road_data(self.selected_road_id)
         lane_to_object_map = road_data['lane_to_object_map']
         lane_sections = road_data['lane_sections']
         road_object = road_data['road_object']
@@ -42,7 +42,7 @@ class SegmentRoad(bpy.types.Operator):
             lane_sections.append(lane_section)
 
             lane_mesh = utils.create_band_mesh(lane_section['lanes'][1], lane_section['lanes'][0])
-            lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
+            lane_object_name = 'lane_object_' + str(self.selected_road_id) + '_' + str(index) + '_' + str(1)
             lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
             lane_object['type'] = 'lane'
             lane_object.parent = road_object
@@ -51,7 +51,7 @@ class SegmentRoad(bpy.types.Operator):
             lane_to_object_map[(index, 1)] = lane_object
 
             lane_mesh = utils.create_band_mesh(lane_section['lanes'][0], lane_section['lanes'][-1])
-            lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
+            lane_object_name = 'lane_object_' + str(self.selected_road_id) + '_' + str(index) + '_' + str(-1)
             lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
             lane_object['type'] = 'lane'
             lane_object.parent = road_object
@@ -91,11 +91,12 @@ class SegmentRoad(bpy.types.Operator):
                     return {'RUNNING_MODAL'}
                 else:
                     helpers.select_activate_object(context, raycast_object)
-                    self.selected_object_name = raycast_object.name
+                    name_sections = raycast_object.name.split('_')
+                    self.selected_road_id = int(name_sections[len(name_sections) - 1])
             else:
                 raycast_point = helpers.mouse_to_xy_plane(context, event)
 
-                road_data = map_scene_data.get_road_data(self.selected_object_name)
+                road_data = map_scene_data.get_road_data(self.selected_road_id)
                 reference_line_segments = road_data['reference_line_segments']
                 current_reference_line_segment = reference_line_segments[len(reference_line_segments) - 1]
                 self.projected_point, self.pre_segment, self.next_segment = utils.split_reference_line_segment(current_reference_line_segment, raycast_point)
@@ -106,11 +107,11 @@ class SegmentRoad(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-            if self.selected_object_name != None:
+            if self.selected_road_id != 0:
                 self.reference_line_selected = True
 
             if self.projected_point != None:
-                road_data = map_scene_data.get_road_data(self.selected_object_name)
+                road_data = map_scene_data.get_road_data(self.selected_road_id)
                 reference_line_segments = road_data['reference_line_segments']
                 reference_line_segments.pop()
                 reference_line_segments.append(self.pre_segment)
@@ -121,7 +122,7 @@ class SegmentRoad(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type in {'RIGHTMOUSE'} and event.value in {'RELEASE'}:
-            road_data = map_scene_data.get_road_data(self.selected_object_name)
+            road_data = map_scene_data.get_road_data(self.selected_road_id)
             reference_line_segments = road_data['reference_line_segments']
             segments_count = len(reference_line_segments)
 

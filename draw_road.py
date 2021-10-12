@@ -18,6 +18,7 @@ class DrawRoad(bpy.types.Operator):
 
     def __init__(self):
         self.road_object = None
+        self.road_id = 0
         self.road_reference_line_object = None
 
         self.last_selected_point = None
@@ -48,13 +49,13 @@ class DrawRoad(bpy.types.Operator):
         road_data['lane_to_object_map'] = self.lane_to_object_map
         road_data['road_object'] = self.road_object
 
-        map_scene_data.set_road_data(self.road_reference_line_object.name, road_data)
+        map_scene_data.set_road_data(self.road_id, road_data)
 
     def create_road_reference_line(self, context):
         left_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'left')
         right_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'right')
         mesh = utils.create_band_mesh(left_side_curve, right_side_curve)
-        object_name = 'reference_line_object_' + str(map_scene_data.generate_reference_line_object_id())
+        object_name = 'reference_line_object_' + str(self.road_id)
         object = bpy.data.objects.new(object_name, mesh)
         object.location[2] += 0.05
         object['type'] = 'road_reference_line'
@@ -70,12 +71,13 @@ class DrawRoad(bpy.types.Operator):
         '''
         self.create_default_lane_section()
 
-        road_object_name = 'road_object_' + str(map_scene_data.generate_road_id())
+        self.road_id = map_scene_data.generate_road_id()
+        road_object_name = 'road_object_' + str(self.road_id)
         self.road_object = bpy.data.objects.new(road_object_name, None)
         context.scene.collection.objects.link(self.road_object)
 
         lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][1], self.lane_sections[0]['lanes'][0])
-        lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
+        lane_object_name = 'lane_object_' + str(self.road_id) + '_' + str(0) + '_' + str(1)
         lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
         lane_object['type'] = 'lane'
         lane_object.parent = self.road_object
@@ -84,7 +86,7 @@ class DrawRoad(bpy.types.Operator):
         self.lane_to_object_map[(0, 1)] = lane_object
 
         lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][0], self.lane_sections[0]['lanes'][-1])
-        lane_object_name = 'lane_object_' + str(map_scene_data.generate_lane_object_id())
+        lane_object_name = 'lane_object_' + str(self.road_id) + '_' + str(0) + '_' + str(-1)
         lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
         lane_object['type'] = 'lane'
         lane_object.parent = self.road_object
