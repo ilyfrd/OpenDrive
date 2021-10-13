@@ -9,6 +9,8 @@ from . import utils
 debug_line_map = {}
 debug_arc_map = {}
 debug_point_map = {}
+debug_curve_map = {}
+
 
 
 current_context = None
@@ -16,6 +18,34 @@ current_context = None
 def set_context(context):
     global current_context
     current_context = context
+
+def draw_debug_curve(id, curve):
+    vertices = []
+    edges = []
+    faces = []
+
+    vertices = utils.generate_vertices_from_curve_elements(curve)
+    utils.remove_duplicated_point(vertices)
+
+    for index in range(0, len(vertices) - 1):
+        edges.append((index, index + 1))
+
+    curve_mesh = bpy.data.meshes.new('curve_mesh')
+    curve_mesh.from_pydata(vertices, edges, faces)
+
+    if id in debug_curve_map:
+        curve_object = debug_curve_map[id]
+        helpers.replace_mesh(curve_object, curve_mesh)
+    else:
+        curve_object = bpy.data.objects.new('curve_object', curve_mesh)
+        current_context.scene.collection.objects.link(curve_object)
+        debug_curve_map[id] = curve_object
+
+def remove_debug_curve(id):
+    if id in debug_curve_map:
+        curve = debug_curve_map[id]
+        bpy.data.objects.remove(curve, do_unlink=True)
+        del debug_curve_map[id]
 
 def draw_debug_arc(id, arc):
     vertices = utils.generate_vertices_from_arc(arc)
@@ -51,8 +81,8 @@ def draw_debug_line(id, point_a, point_b):
 
 def remove_debug_line(id):
     if id in debug_line_map:
-        segmenting_line = debug_line_map[id]
-        bpy.data.objects.remove(segmenting_line, do_unlink=True)
+        line = debug_line_map[id]
+        bpy.data.objects.remove(line, do_unlink=True)
         del debug_line_map[id]
 
 def draw_debug_point(id, point):
