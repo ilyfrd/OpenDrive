@@ -17,7 +17,6 @@ class SegmentRoad(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def __init__(self):
-        self.reference_line_selected = False
         self.selected_road_id = 0
 
         self.projected_point = None
@@ -84,16 +83,7 @@ class SegmentRoad(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if event.type == 'MOUSEMOVE':
-            if self.reference_line_selected == False:
-                hit, raycast_point, raycast_object = math_utils.raycast_mouse_to_object(context, event, 'road_reference_line')
-
-                if not hit:
-                    return {'RUNNING_MODAL'}
-                else:
-                    helpers.select_activate_object(context, raycast_object)
-                    name_sections = raycast_object.name.split('_')
-                    self.selected_road_id = int(name_sections[len(name_sections) - 1])
-            else:
+            if self.selected_road_id != 0:
                 raycast_point = helpers.mouse_to_xy_plane(context, event)
 
                 road_data = map_scene_data.get_road_data(self.selected_road_id)
@@ -107,17 +97,23 @@ class SegmentRoad(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-            if self.selected_road_id != 0:
-                self.reference_line_selected = True
+            if self.selected_road_id == 0: # 尚未选中road
+                hit, raycast_point, raycast_object = math_utils.raycast_mouse_to_object(context, event, 'road_reference_line')
+                if not hit:
+                    return {'RUNNING_MODAL'}
+                else:
+                    helpers.select_activate_object(context, raycast_object)
+                    name_sections = raycast_object.name.split('_')
+                    self.selected_road_id = int(name_sections[len(name_sections) - 1])
+            else: # 选中road
+                if self.projected_point != None:
+                    road_data = map_scene_data.get_road_data(self.selected_road_id)
+                    reference_line_segments = road_data['reference_line_segments']
+                    reference_line_segments.pop()
+                    reference_line_segments.append(self.pre_segment)
+                    reference_line_segments.append(self.next_segment)
 
-            if self.projected_point != None:
-                road_data = map_scene_data.get_road_data(self.selected_road_id)
-                reference_line_segments = road_data['reference_line_segments']
-                reference_line_segments.pop()
-                reference_line_segments.append(self.pre_segment)
-                reference_line_segments.append(self.next_segment)
-
-                self.refresh_segmenting(context)
+                    self.refresh_segmenting(context)
 
             return {'RUNNING_MODAL'}
 
