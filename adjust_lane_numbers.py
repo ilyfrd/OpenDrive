@@ -49,7 +49,7 @@ class AdjustLaneNumbers(bpy.types.Operator):
                 if lane_id == selected_section['left_most_lane_index']:
                     utils.add_lane(selected_section, 'left')
                     left_most_lane_index = selected_section['left_most_lane_index']
-                    lane_mesh = utils.create_band_mesh(selected_section['lanes'][left_most_lane_index], selected_section['lanes'][left_most_lane_index - 1])
+                    lane_mesh = utils.create_band_mesh(selected_section['lanes'][left_most_lane_index]['boundary_curve_elements'], selected_section['lanes'][left_most_lane_index - 1]['boundary_curve_elements'])
                     lane_object_name = 'lane_object_' + str(road_id) + '_' + str(section_id) + '_' + str(left_most_lane_index)
                     lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
                     lane_object['type'] = 'lane'
@@ -61,7 +61,7 @@ class AdjustLaneNumbers(bpy.types.Operator):
                 elif lane_id == selected_section['right_most_lane_index']:
                     utils.add_lane(selected_section, 'right')
                     right_most_lane_index = selected_section['right_most_lane_index']   
-                    lane_mesh = utils.create_band_mesh(selected_section['lanes'][right_most_lane_index + 1], selected_section['lanes'][right_most_lane_index])
+                    lane_mesh = utils.create_band_mesh(selected_section['lanes'][right_most_lane_index + 1]['boundary_curve_elements'], selected_section['lanes'][right_most_lane_index]['boundary_curve_elements'])
                     lane_object_name = 'lane_object_' + str(road_id) + '_' + str(section_id) + '_' + str(right_most_lane_index)
                     lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
                     lane_object['type'] = 'lane'

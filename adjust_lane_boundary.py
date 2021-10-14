@@ -87,15 +87,15 @@ class AdjustLaneBoundary(DrawCurveBase):
 
                 selected_road = map_scene_data.get_road_data(road_id)
                 selected_section = selected_road['lane_sections'][section_id]
-                selected_section['lanes'][lane_id] = self.reference_line_elements.copy()
+                selected_section['lanes'][lane_id]['boundary_curve_elements'] = self.reference_line_elements.copy()
 
                 lane_to_object_map = selected_road['lane_to_object_map']
                 lane_object = lane_to_object_map[(section_id, lane_id)]
                 new_lane_mesh = None
                 if lane_id == selected_section['left_most_lane_index']:
-                    new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id], selected_section['lanes'][lane_id - 1])
+                    new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id]['boundary_curve_elements'], selected_section['lanes'][lane_id - 1]['boundary_curve_elements'])
                 elif lane_id == selected_section['right_most_lane_index']:
-                    new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id + 1], selected_section['lanes'][lane_id])
+                    new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id + 1]['boundary_curve_elements'], selected_section['lanes'][lane_id]['boundary_curve_elements'])
                 helpers.replace_mesh(lane_object, new_lane_mesh)
                 lane_object.hide_set(False)
            

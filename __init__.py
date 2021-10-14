@@ -37,8 +37,7 @@ from . draw_road import DrawRoad
 from . segment_road import SegmentRoad
 from . adjust_lane_numbers import AdjustLaneNumbers
 from . adjust_lane_boundary import AdjustLaneBoundary
-
-
+from . draw_lane_boundary import DrawLaneBoundary
 
 from . draw_junction import DrawJunction
 
@@ -87,6 +86,8 @@ class DSC_PT_panel_create(bpy.types.Panel):
         row.operator('dsc.adjust_lane_numbers', text='Adjust Lane Numbers', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
         row.operator('dsc.adjust_lane_boundary', text='Adjust Lane Boundary', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.draw_lane_boundary', text='Draw Lane Boundary', icon_value=custom_icons['road_straight'].icon_id)
 
         innerBox = outerBox.box()
         innerBox.label(text='Junction')
@@ -166,6 +167,7 @@ classes = (
     SegmentRoad,
     AdjustLaneNumbers,
     AdjustLaneBoundary,
+    DrawLaneBoundary,
     DrawJunction
 )
 

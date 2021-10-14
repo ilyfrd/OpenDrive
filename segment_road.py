@@ -40,7 +40,7 @@ class SegmentRoad(bpy.types.Operator):
             lane_section = utils.create_lane_section(reference_line_segments[index])
             lane_sections.append(lane_section)
 
-            lane_mesh = utils.create_band_mesh(lane_section['lanes'][1], lane_section['lanes'][0])
+            lane_mesh = utils.create_band_mesh(lane_section['lanes'][1]['boundary_curve_elements'], lane_section['lanes'][0]['boundary_curve_elements'])
             lane_object_name = 'lane_object_' + str(self.selected_road_id) + '_' + str(index) + '_' + str(1)
             lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
             lane_object['type'] = 'lane'
@@ -49,7 +49,7 @@ class SegmentRoad(bpy.types.Operator):
 
             lane_to_object_map[(index, 1)] = lane_object
 
-            lane_mesh = utils.create_band_mesh(lane_section['lanes'][0], lane_section['lanes'][-1])
+            lane_mesh = utils.create_band_mesh(lane_section['lanes'][0]['boundary_curve_elements'], lane_section['lanes'][-1]['boundary_curve_elements'])
             lane_object_name = 'lane_object_' + str(self.selected_road_id) + '_' + str(index) + '_' + str(-1)
             lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
             lane_object['type'] = 'lane'
@@ -140,10 +140,9 @@ class SegmentRoad(bpy.types.Operator):
             return {'FINISHED'}
             
         elif event.type in {'LEFT_SHIFT'} and event.value in {'RELEASE'}:
-           
 
             return {'RUNNING_MODAL'}
-        # Zoom
+
         elif event.type in {'WHEELUPMOUSE'}:
             bpy.ops.view3d.zoom(mx=0, my=0, delta=1, use_cursor_init=False)
         elif event.type in {'WHEELDOWNMOUSE'}:
@@ -152,7 +151,6 @@ class SegmentRoad(bpy.types.Operator):
             if event.alt:
                 bpy.ops.view3d.view_center_cursor()
 
-        # Catch everything else arriving here
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):

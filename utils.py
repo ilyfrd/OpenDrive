@@ -1,5 +1,7 @@
 import math
 import bpy
+import copy
+
 
 from mathutils import geometry, Vector, Matrix
 from math import acos, ceil, radians, dist
@@ -20,9 +22,13 @@ def add_lane(lane_section, direction):
         new_lane_id = reference_lane_id - 1
         lane_section['right_most_lane_index'] = new_lane_id
 
-    reference_lane = lane_section['lanes'][reference_lane_id]
+    reference_lane = lane_section['lanes'][reference_lane_id]['boundary_curve_elements']
 
-    new_lane = generate_new_curve_by_offset(reference_lane, 3, direction)
+    new_lane = {
+        'boundary_curve_elements': [],
+        'lane_boundary_drew': False
+    }
+    new_lane['boundary_curve_elements'] = generate_new_curve_by_offset(reference_lane, 3, direction)
 
     lane_section['lanes'][new_lane_id] = new_lane
 
@@ -40,7 +46,12 @@ def create_lane_section(reference_line_elements):
         'left_most_lane_index': 0,
         'right_most_lane_index': 0
     }
-    default_lane_section['lanes'][0] = reference_line_elements #中心车道
+    center_lane = {
+        'boundary_curve_elements': []
+    }
+    center_lane['boundary_curve_elements'] = reference_line_elements #中心车道
+
+    default_lane_section['lanes'][0] = center_lane 
 
     add_lane(default_lane_section, 'left')
     add_lane(default_lane_section, 'right')
@@ -198,6 +209,103 @@ def generate_new_curve_by_offset(curve, offset, direction):
 
     return new_curve
 
+def generate_dotted_curve_from_solid_curve(solid_curve, dash_size, gap_size):
+    dotted_curve = []
+
+    is_generating_dash = True
+
+    copyed_solid_curve = copy.deepcopy(solid_curve)
+    copyed_dash_size = dash_size
+    copyed_gap_size = gap_size
+
+    while len(copyed_solid_curve) > 0:
+        element = copyed_solid_curve[0]
+
+        if is_generating_dash == True:
+            if element['type'] == 'line':
+                line_length = dist(element['start_point'], element['end_point'])
+                if line_length > copyed_dash_size:
+                    split_point = get_point_on_line_by_distance(element, copyed_dash_size)
+                    pre_line, next_line = split_line(element, split_point)
+
+                    dotted_curve.append(pre_line)
+                    copyed_solid_curve.pop(0)
+                    copyed_solid_curve.insert(0, next_line)
+
+                    is_generating_dash = not is_generating_dash
+                    copyed_dash_size = dash_size
+                else:
+                    dotted_curve.append(element)
+                    copyed_solid_curve.pop(0)
+
+                    copyed_dash_size -= line_length
+                    if copyed_dash_size < 0.001:
+                        is_generating_dash = not is_generating_dash
+                        copyed_dash_size = dash_size
+
+            elif element['type'] == 'arc':
+                center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
+                arc_length = arc_radian * arc_radius
+                if arc_length > copyed_dash_size:
+                    split_point = get_point_on_arc_by_distance(element, copyed_dash_size)
+                    pre_arc, next_arc = split_arc(element, split_point)
+
+                    dotted_curve.append(pre_arc)
+                    copyed_solid_curve.pop(0)
+                    copyed_solid_curve.insert(0, next_arc)
+
+                    is_generating_dash = not is_generating_dash
+                    copyed_dash_size = dash_size
+                else:
+                    dotted_curve.append(element)
+                    copyed_solid_curve.pop(0)
+
+                    copyed_dash_size -= arc_length
+                    if copyed_dash_size < 0.001:
+                        is_generating_dash = not is_generating_dash
+                        copyed_dash_size = dash_size
+        else:
+            if element['type'] == 'line':
+                line_length = dist(element['start_point'], element['end_point'])
+                if line_length > copyed_gap_size:
+                    split_point = get_point_on_line_by_distance(element, copyed_gap_size)
+                    pre_line, next_line = split_line(element, split_point)
+
+                    copyed_solid_curve.pop(0)
+                    copyed_solid_curve.insert(0, next_line)
+
+                    is_generating_dash = not is_generating_dash
+                    copyed_gap_size = gap_size
+                else:
+                    copyed_solid_curve.pop(0)
+
+                    copyed_gap_size -= line_length
+                    if copyed_gap_size < 0.001:
+                        is_generating_dash = not is_generating_dash
+                        copyed_gap_size = gap_size
+
+            elif element['type'] == 'arc':
+                center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
+                arc_length = arc_radian * arc_radius
+                if arc_length > copyed_gap_size:
+                    split_point = get_point_on_arc_by_distance(element, copyed_gap_size)
+                    pre_arc, next_arc = split_arc(element, split_point)
+
+                    copyed_solid_curve.pop(0)
+                    copyed_solid_curve.insert(0, next_arc)
+
+                    is_generating_dash = not is_generating_dash
+                    copyed_gap_size = gap_size
+                else:
+                    copyed_solid_curve.pop(0)
+
+                    copyed_gap_size -= arc_length
+                    if copyed_gap_size < 0.001:
+                        is_generating_dash = not is_generating_dash
+                        copyed_gap_size = gap_size
+
+    return dotted_curve
+        
 def generate_vertices_from_curve_elements(curve_elements):
     vertices = []
     for element in curve_elements:
@@ -265,38 +373,60 @@ def computer_arc_end_tangent(start_point, start_tangent, end_point):
 
     return end_tangent
 
+def get_point_on_line_by_distance(line, distance):
+    start_point = line['start_point']
+    line_direction = line['start_tangent'].copy()
+    line_direction.normalize()
+    math_utils.vector_scale(line_direction, distance)
+
+    return math_utils.vector_add(start_point, line_direction)
+
+def get_point_on_arc_by_distance(arc, distance):
+    center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
+    radian = distance / arc_radius
+
+    normal_vector =  arc['start_tangent'].cross(arc['end_tangent'])
+    if normal_vector.z < 0:
+        radian = -radian
+
+    current_vector = math_utils.vector_subtract(arc['start_point'], center_point)
+    current_vector.rotate(Matrix.Rotation(radian, 4, 'Z'))
+    current_point = math_utils.vector_add(center_point, current_vector)
+
+    return current_point
+
+def split_line(line, split_point):
+    pre_line = line.copy()
+    pre_line['end_point'] = split_point.copy()
+
+    next_line = line.copy()
+    next_line['start_point'] = split_point.copy()
+
+    return pre_line, next_line
+
+def split_arc(arc, split_point):
+    center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
+    normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
+    split_point_to_center_point_vector = math_utils.vector_subtract(center_point, split_point)
+    tangent_at_split_point = normal_vector_of_xy_plane.cross(split_point_to_center_point_vector)
+
+    normal_vector =  arc['start_tangent'].cross(arc['end_tangent'])
+    if normal_vector.z > 0:
+        math_utils.vector_scale(tangent_at_split_point, -1)
+
+    pre_arc = arc.copy()
+    pre_arc['end_point'] = split_point.copy()
+    pre_arc['end_tangent'] = tangent_at_split_point.copy()
+
+    next_arc = arc.copy()
+    next_arc['start_point'] = split_point.copy()
+    next_arc['start_tangent'] = tangent_at_split_point.copy()
+
+    return pre_arc, next_arc
+
 def split_reference_line_segment(curve_elements, split_point):
     pre_segment = []
     next_segment = []
-
-    def split_line(line, split_point):
-        pre_line = line.copy()
-        pre_line['end_point'] = split_point.copy()
-
-        next_line = line.copy()
-        next_line['start_point'] = split_point.copy()
-
-        return pre_line, next_line
-
-    def split_arc(arc, split_point):
-        center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
-        normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
-        split_point_to_center_point_vector = math_utils.vector_subtract(center_point, split_point)
-        tangent_at_split_point = normal_vector_of_xy_plane.cross(split_point_to_center_point_vector)
-
-        normal_vector =  arc['start_tangent'].cross(arc['end_tangent'])
-        if normal_vector.z > 0:
-            math_utils.vector_scale(tangent_at_split_point, -1)
-
-        pre_arc = arc.copy()
-        pre_arc['end_point'] = split_point.copy()
-        pre_arc['end_tangent'] = tangent_at_split_point.copy()
-
-        next_arc = arc.copy()
-        next_arc['start_point'] = split_point.copy()
-        next_arc['start_tangent'] = tangent_at_split_point.copy()
-
-        return pre_arc, next_arc
 
     projected_point = None
 
