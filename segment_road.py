@@ -1,16 +1,12 @@
 
 import bpy
 
-from . import utils
+from . import basic_element_utils
 from . import draw_utils
 from . import math_utils
 from . import road_utils
 from . import helpers
 from . import map_scene_data
-
-
-
-
 
 
 class SegmentRoad(bpy.types.Operator):
@@ -94,7 +90,7 @@ class SegmentRoad(bpy.types.Operator):
                 road_data = map_scene_data.get_road_data(self.selected_road_id)
                 reference_line_segments = road_data['reference_line_segments']
                 current_reference_line_segment = reference_line_segments[len(reference_line_segments) - 1]
-                self.projected_point, self.pre_segment, self.next_segment = utils.split_reference_line_segment(current_reference_line_segment, raycast_point)
+                self.projected_point, self.pre_segment, self.next_segment = basic_element_utils.split_reference_line_segment(current_reference_line_segment, raycast_point)
 
                 if self.projected_point != None:
                     self.draw_segmenting_line(raycast_point, self.projected_point)
@@ -128,7 +124,7 @@ class SegmentRoad(bpy.types.Operator):
             segments_count = len(reference_line_segments)
 
             if segments_count >= 2:
-                merged_segment = utils.merge_reference_line_segment(reference_line_segments[segments_count-2], reference_line_segments[segments_count-1])
+                merged_segment = basic_element_utils.merge_reference_line_segment(reference_line_segments[segments_count-2], reference_line_segments[segments_count-1])
                 reference_line_segments.pop()
                 reference_line_segments.pop()
                 reference_line_segments.append(merged_segment)

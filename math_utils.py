@@ -1,7 +1,7 @@
 
 from mathutils import Vector, geometry
 from bpy_extras.view3d_utils import region_2d_to_origin_3d, region_2d_to_vector_3d
-from . import utils
+from . import basic_element_utils
 
 
 
@@ -49,7 +49,7 @@ def project_point_onto_finite_line(point, line_start_point, line_end_point):
         return None
 
 def project_point_onto_finite_arc(point, arc):
-    center_point, arc_radian, arc_radius = utils.get_arc_geometry_info(arc)
+    center_point, arc_radian, arc_radius = basic_element_utils.get_arc_geometry_info(arc)
 
     center_to_current_point_vector = vector_subtract(point, center_point)
     center_to_current_point_vector.normalize()

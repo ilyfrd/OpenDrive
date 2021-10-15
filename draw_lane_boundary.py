@@ -1,10 +1,9 @@
 
 import bpy
 
-from . import utils
 from . import draw_utils
 from . import math_utils
-from . import helpers
+from . import basic_element_utils
 from . import map_scene_data
 
 
@@ -22,8 +21,8 @@ class DrawLaneBoundary(bpy.types.Operator):
 
         vertex_index = -1
 
-        left_dotted_curve = utils.generate_new_curve_by_offset(dotted_curve, 0.2, 'left')
-        right_dotted_curve = utils.generate_new_curve_by_offset(dotted_curve, 0.2, 'right')
+        left_dotted_curve = basic_element_utils.generate_new_curve_by_offset(dotted_curve, 0.2, 'left')
+        right_dotted_curve = basic_element_utils.generate_new_curve_by_offset(dotted_curve, 0.2, 'right')
 
         for index in range(0, len(dotted_curve)):
             left_element = left_dotted_curve[index]
@@ -39,8 +38,8 @@ class DrawLaneBoundary(bpy.types.Operator):
                 faces.append((vertex_index-3, vertex_index-2, vertex_index-1, vertex_index))
 
             elif left_element['type'] == 'arc':
-                left_vertices = utils.generate_vertices_from_arc(left_element)
-                right_vertices = utils.generate_vertices_from_arc(right_element)
+                left_vertices = basic_element_utils.generate_vertices_from_arc(left_element)
+                right_vertices = basic_element_utils.generate_vertices_from_arc(right_element)
 
                 left_pre_index = 0
                 left_current_index = 0
@@ -102,7 +101,7 @@ class DrawLaneBoundary(bpy.types.Operator):
                 lane_boundary_elements = selected_section['lanes'][lane_id]['boundary_curve_elements']
 
                 if selected_section['lanes'][lane_id]['lane_boundary_drew'] == False:
-                    dotted_curve = utils.generate_dotted_curve_from_solid_curve(lane_boundary_elements, 3, 2)
+                    dotted_curve = basic_element_utils.generate_dotted_curve_from_solid_curve(lane_boundary_elements, 3, 2)
                     mesh = self.generate_lane_boundary_mesh(dotted_curve)
                     object_name = 'lane_boundary_object_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
                     object = bpy.data.objects.new(object_name, mesh)

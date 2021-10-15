@@ -2,7 +2,7 @@ import math
 import bpy
 
 from math import acos, ceil, radians, dist
-from . import utils
+from . import basic_element_utils
 
 def add_lane(lane_section, direction):
     reference_lane_id = 0
@@ -22,7 +22,7 @@ def add_lane(lane_section, direction):
         'boundary_curve_elements': [],
         'lane_boundary_drew': False
     }
-    new_lane['boundary_curve_elements'] = utils.generate_new_curve_by_offset(reference_lane, 3, direction)
+    new_lane['boundary_curve_elements'] = basic_element_utils.generate_new_curve_by_offset(reference_lane, 3, direction)
 
     lane_section['lanes'][new_lane_id] = new_lane
 
@@ -67,8 +67,8 @@ def create_band_mesh(up_boundary, down_boundary):
     edges = []
     faces = []
 
-    up_boundary_vertices = utils.generate_vertices_from_curve_elements(up_boundary)
-    down_boundary_vertices = utils.generate_vertices_from_curve_elements(down_boundary)
+    up_boundary_vertices = basic_element_utils.generate_vertices_from_curve_elements(up_boundary)
+    down_boundary_vertices = basic_element_utils.generate_vertices_from_curve_elements(down_boundary)
     remove_duplicated_point(up_boundary_vertices)
     remove_duplicated_point(down_boundary_vertices)
 

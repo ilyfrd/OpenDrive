@@ -4,8 +4,7 @@ import bmesh
 from mathutils import Vector, Matrix, geometry
 from math import fabs, dist, acos
 
-from . import utils
-from . import draw_utils
+from . import basic_element_utils
 from . import math_utils
 from . import helpers
 from . import map_scene_data
@@ -58,7 +57,7 @@ class DrawCurveBase(bpy.types.Operator):
                 self.current_element['start_point'] = self.last_selected_point
                 self.current_element['end_point'] = self.raycast_point
                 self.current_element['start_tangent'] = self.reference_line_elements[current_element_number - 2]['end_tangent']
-                self.current_element['end_tangent'] = utils.computer_arc_end_tangent(self.current_element['start_point'],
+                self.current_element['end_tangent'] = basic_element_utils.computer_arc_end_tangent(self.current_element['start_point'],
                                                                                     self.current_element['start_tangent'],
                                                                                     self.current_element['end_point'])
 

@@ -4,7 +4,7 @@ from math import fabs, dist, acos
 
 from . import math_utils
 from . import helpers
-from . import utils
+from . import basic_element_utils
 from . import road_utils
 
 
@@ -28,7 +28,7 @@ def draw_curve(id, curve):
     edges = []
     faces = []
 
-    vertices = utils.generate_vertices_from_curve_elements(curve)
+    vertices = basic_element_utils.generate_vertices_from_curve_elements(curve)
     road_utils.remove_duplicated_point(vertices)
 
     for index in range(0, len(vertices) - 1):
@@ -52,7 +52,7 @@ def remove_curve(id):
         del debug_curve_map[id]
 
 def draw_arc(id, arc):
-    vertices = utils.generate_vertices_from_arc(arc)
+    vertices = basic_element_utils.generate_vertices_from_arc(arc)
     edges = []
     for index in range(0, len(vertices) - 1):
         edges.append((index, index + 1))

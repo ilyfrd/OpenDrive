@@ -4,8 +4,7 @@ from mathutils import Vector, Matrix, geometry
 from math import fabs, dist, acos
 
 from . import helpers
-from . import utils
-from . import math_utils
+from . import basic_element_utils
 from . import road_utils
 from . import draw_utils
 from . import map_scene_data
@@ -43,8 +42,8 @@ class DrawRoad(DrawCurveBase):
         map_scene_data.set_road_data(self.road_id, road_data)
 
     def create_road_reference_line(self, context):
-        left_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'left')
-        right_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'right')
+        left_side_curve = basic_element_utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'left')
+        right_side_curve = basic_element_utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'right')
         mesh = road_utils.create_band_mesh(left_side_curve, right_side_curve)
         object_name = 'reference_line_object_' + str(self.road_id)
         object = bpy.data.objects.new(object_name, mesh)

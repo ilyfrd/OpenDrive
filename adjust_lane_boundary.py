@@ -1,7 +1,6 @@
 
 import bpy
 
-from . import utils
 from . import draw_utils
 from . import math_utils
 from . import road_utils
