@@ -17,7 +17,7 @@ def add_lane(lane_section, direction):
         reference_lane_id = lane_section['left_most_lane_index']
         new_lane_id = reference_lane_id + 1
         lane_section['left_most_lane_index'] = new_lane_id
-    else:
+    elif direction == 'right':
         reference_lane_id = lane_section['right_most_lane_index']
         new_lane_id = reference_lane_id - 1
         lane_section['right_most_lane_index'] = new_lane_id
@@ -77,26 +77,33 @@ def create_band_mesh(up_boundary, down_boundary):
     down_boundary_vertices = generate_vertices_from_curve_elements(down_boundary)
     remove_duplicated_point(up_boundary_vertices)
     remove_duplicated_point(down_boundary_vertices)
+
+    current_vertice_index = -1
+
     quadrilateral_loop_up_index = 1
     quadrilateral_loop_down_index = 1
 
-    quadrilateral_left_up_point_index = 0
-    quadrilateral_left_down_point_index = 1
-    quadrilateral_right_down_point_index = 0
-    quadrilateral_right_up_point_index = 0
+    quadrilateral_left_up_point_index = -1
+    quadrilateral_left_down_point_index = -1
+    quadrilateral_right_down_point_index = -1
+    quadrilateral_right_up_point_index = -1
 
     vertices.append(up_boundary_vertices[0])
-    vertices.append(down_boundary_vertices[0])
+    current_vertice_index += 1
+    quadrilateral_left_up_point_index = current_vertice_index
 
-    max_vertice_index = 1
+    vertices.append(down_boundary_vertices[0])
+    current_vertice_index += 1
+    quadrilateral_left_down_point_index = current_vertice_index
+
     while quadrilateral_loop_up_index < len(up_boundary_vertices) and quadrilateral_loop_down_index < len(down_boundary_vertices):
         vertices.append(down_boundary_vertices[quadrilateral_loop_down_index])
-        max_vertice_index += 1
-        quadrilateral_right_down_point_index = max_vertice_index
+        current_vertice_index += 1
+        quadrilateral_right_down_point_index = current_vertice_index
 
         vertices.append(up_boundary_vertices[quadrilateral_loop_up_index])
-        max_vertice_index += 1
-        quadrilateral_right_up_point_index = max_vertice_index
+        current_vertice_index += 1
+        quadrilateral_right_up_point_index = current_vertice_index
 
         # edges.append((quadrilateral_left_up_point_index, quadrilateral_left_down_point_index))
         # edges.append((quadrilateral_left_down_point_index, quadrilateral_right_down_point_index))
@@ -117,23 +124,23 @@ def create_band_mesh(up_boundary, down_boundary):
 
     triangle_left_up_point_index = quadrilateral_right_up_point_index
     triangle_left_down_point_index = quadrilateral_right_down_point_index
-    triangle_right_point_index = 0
+    triangle_right_point_index = -1
 
     boundary_has_more_vertices = ''
     triangle_loop_index = 0
 
-    if len(up_boundary_vertices) > quadrilateral_loop_up_index:
+    if quadrilateral_loop_up_index < len(up_boundary_vertices):
         boundary_has_more_vertices = 'up_boundary'
         triangle_loop_index = quadrilateral_loop_up_index
-    elif len(down_boundary_vertices) > quadrilateral_loop_down_index:
+    elif quadrilateral_loop_down_index < len(down_boundary_vertices):
         boundary_has_more_vertices = 'down_boundary'
         triangle_loop_index = quadrilateral_loop_down_index
 
     if boundary_has_more_vertices == 'up_boundary':
         while triangle_loop_index < len(up_boundary_vertices):
             vertices.append(up_boundary_vertices[triangle_loop_index])
-            max_vertice_index += 1
-            triangle_right_point_index = max_vertice_index
+            current_vertice_index += 1
+            triangle_right_point_index = current_vertice_index
 
             # edges.append((triangle_left_up_point_index, triangle_left_down_point_index))
             # edges.append((triangle_left_down_point_index, triangle_right_point_index))
@@ -147,13 +154,14 @@ def create_band_mesh(up_boundary, down_boundary):
 
             triangle_loop_index += 1
     elif boundary_has_more_vertices == 'down_boundary':
+        while triangle_loop_index < len(down_boundary_vertices):
             vertices.append(down_boundary_vertices[triangle_loop_index])
-            max_vertice_index += 1
-            triangle_right_point_index = max_vertice_index
+            current_vertice_index += 1
+            triangle_right_point_index = current_vertice_index
 
-            edges.append((triangle_left_up_point_index, triangle_left_down_point_index))
-            edges.append((triangle_left_down_point_index, triangle_right_point_index))
-            edges.append((triangle_right_point_index, triangle_left_up_point_index))
+            # edges.append((triangle_left_up_point_index, triangle_left_down_point_index))
+            # edges.append((triangle_left_down_point_index, triangle_right_point_index))
+            # edges.append((triangle_right_point_index, triangle_left_up_point_index))
 
             faces.append((triangle_left_up_point_index, 
                             triangle_left_down_point_index, 
@@ -167,14 +175,13 @@ def create_band_mesh(up_boundary, down_boundary):
     mesh.from_pydata(vertices, edges, faces)
     return mesh
 
-
 def generate_new_curve_by_offset(curve, offset, direction):
     def generate_new_point(origin, tangent):
         normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
         normal_vector = normal_vector_of_xy_plane.cross(tangent).normalized()
         math_utils.vector_scale_ref(normal_vector, offset)
 
-        if direction == 'left':
+        if direction == 'right':
             normal_vector.negate()
 
         new_point = Vector((0.0, 0.0, 0.0))
