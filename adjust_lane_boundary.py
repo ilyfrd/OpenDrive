@@ -25,6 +25,9 @@ class AdjustLaneBoundary(DrawCurveBase):
     def draw_lane_boundary(self):
         debug_utils.draw_debug_curve('lane_boundary', self.reference_line_elements)
 
+    def remove_lane_boundary(self):
+        debug_utils.remove_debug_curve('lane_boundary')
+
     def draw_end_tangent(self):
         last_element = self.reference_line_elements[len(self.reference_line_elements) - 1]
 
@@ -35,7 +38,7 @@ class AdjustLaneBoundary(DrawCurveBase):
         line_start_point = last_element['end_point'].copy()
         line_end_point = math_utils.vector_add(line_start_point, line_direction)
 
-        debug_utils.draw_debug_dashed_line('adjust_lane_boundary', line_start_point, line_end_point, 3, 2)
+        debug_utils.draw_debug_dashed_line('adjust_lane_boundary', line_start_point, line_end_point, 0.5, 0.3)
 
     def remove_end_tangent(self):
         debug_utils.remove_debug_dashed_line('adjust_lane_boundary')
@@ -78,23 +81,15 @@ class AdjustLaneBoundary(DrawCurveBase):
                 selected_section = selected_road['lane_sections'][section_id]
                 if lane_id == selected_section['left_most_lane_index'] or lane_id == selected_section['right_most_lane_index']:
                     self.selected_lane = raycast_object
-
-                    lane_to_object_map = selected_road['lane_to_object_map']
-                    lane_object = lane_to_object_map[(section_id, lane_id)]
-                    lane_object.hide_set(True)
+                    self.selected_lane.hide_set(True)
 
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
+            self.remove_lane_boundary()
             self.remove_end_tangent()
 
-            element_number = len(self.reference_line_elements)
-
-            if element_number <= 1:
-                return {'RUNNING_MODAL'}
-            else:
-                debug_utils.remove_debug_curve('lane_boundary')
-
+            if len(self.reference_line_elements) > 1: 
                 self.reference_line_elements.pop()
 
                 name_sections = self.selected_lane.name.split('_')
@@ -107,15 +102,15 @@ class AdjustLaneBoundary(DrawCurveBase):
                 selected_section = selected_road['lane_sections'][section_id]
                 selected_section['lanes'][lane_id]['boundary_curve_elements'] = self.reference_line_elements.copy()
 
-                lane_to_object_map = selected_road['lane_to_object_map']
-                lane_object = lane_to_object_map[(section_id, lane_id)]
                 new_lane_mesh = None
                 if lane_id == selected_section['left_most_lane_index']:
                     new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id]['boundary_curve_elements'], selected_section['lanes'][lane_id - 1]['boundary_curve_elements'])
                 elif lane_id == selected_section['right_most_lane_index']:
                     new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id + 1]['boundary_curve_elements'], selected_section['lanes'][lane_id]['boundary_curve_elements'])
-                helpers.replace_mesh(lane_object, new_lane_mesh)
-                lane_object.hide_set(False)
+                helpers.replace_mesh(self.selected_lane, new_lane_mesh)
+            
+            if self.selected_lane != None:
+                self.selected_lane.hide_set(False)
            
             self.clean_up(context)
 

@@ -169,15 +169,15 @@ class DrawRoad(DrawCurveBase):
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
-            if len(self.reference_line_elements) <= 1:
+            if len(self.reference_line_elements) == 1: # 已经下点，但还没有完成第一个element的绘制
                 self.remove_default_road()
-            else:
+            elif len(self.reference_line_elements) > 1:
                 self.reference_line_elements.pop()
                 self.update_default_road()
 
-            self.reference_line_segments.append(self.reference_line_elements)
-            self.create_road_reference_line(context)
-            self.save_road_data()
+                self.reference_line_segments.append(self.reference_line_elements)
+                self.create_road_reference_line(context)
+                self.save_road_data()
 
             self.clean_up(context)
 
