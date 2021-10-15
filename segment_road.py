@@ -4,8 +4,10 @@ import bpy
 from . import utils
 from . import draw_utils
 from . import math_utils
+from . import road_utils
 from . import helpers
 from . import map_scene_data
+
 
 
 
@@ -37,10 +39,10 @@ class SegmentRoad(bpy.types.Operator):
         lane_sections.clear()
 
         for index in range(0, len(reference_line_segments)):
-            lane_section = utils.create_lane_section(reference_line_segments[index])
+            lane_section = road_utils.create_lane_section(reference_line_segments[index])
             lane_sections.append(lane_section)
 
-            lane_mesh = utils.create_band_mesh(lane_section['lanes'][1]['boundary_curve_elements'], lane_section['lanes'][0]['boundary_curve_elements'])
+            lane_mesh = road_utils.create_band_mesh(lane_section['lanes'][1]['boundary_curve_elements'], lane_section['lanes'][0]['boundary_curve_elements'])
             lane_object_name = 'lane_object_' + str(self.selected_road_id) + '_' + str(index) + '_' + str(1)
             lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
             lane_object['type'] = 'lane'
@@ -49,7 +51,7 @@ class SegmentRoad(bpy.types.Operator):
 
             lane_to_object_map[(index, 1)] = lane_object
 
-            lane_mesh = utils.create_band_mesh(lane_section['lanes'][0]['boundary_curve_elements'], lane_section['lanes'][-1]['boundary_curve_elements'])
+            lane_mesh = road_utils.create_band_mesh(lane_section['lanes'][0]['boundary_curve_elements'], lane_section['lanes'][-1]['boundary_curve_elements'])
             lane_object_name = 'lane_object_' + str(self.selected_road_id) + '_' + str(index) + '_' + str(-1)
             lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
             lane_object['type'] = 'lane'

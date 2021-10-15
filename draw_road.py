@@ -6,6 +6,7 @@ from math import fabs, dist, acos
 from . import helpers
 from . import utils
 from . import math_utils
+from . import road_utils
 from . import draw_utils
 from . import map_scene_data
 from . draw_curve_base import DrawCurveBase
@@ -44,7 +45,7 @@ class DrawRoad(DrawCurveBase):
     def create_road_reference_line(self, context):
         left_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'left')
         right_side_curve = utils.generate_new_curve_by_offset(self.reference_line_elements, 0.1, 'right')
-        mesh = utils.create_band_mesh(left_side_curve, right_side_curve)
+        mesh = road_utils.create_band_mesh(left_side_curve, right_side_curve)
         object_name = 'reference_line_object_' + str(self.road_id)
         object = bpy.data.objects.new(object_name, mesh)
         object.location[2] += 0.05
@@ -66,7 +67,7 @@ class DrawRoad(DrawCurveBase):
         self.road_object = bpy.data.objects.new(road_object_name, None)
         context.scene.collection.objects.link(self.road_object)
 
-        lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][1]['boundary_curve_elements'], self.lane_sections[0]['lanes'][0]['boundary_curve_elements'])
+        lane_mesh = road_utils.create_band_mesh(self.lane_sections[0]['lanes'][1]['boundary_curve_elements'], self.lane_sections[0]['lanes'][0]['boundary_curve_elements'])
         lane_object_name = 'lane_object_' + str(self.road_id) + '_' + str(0) + '_' + str(1)
         lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
         lane_object['type'] = 'lane'
@@ -75,7 +76,7 @@ class DrawRoad(DrawCurveBase):
 
         self.lane_to_object_map[(0, 1)] = lane_object
 
-        lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][0]['boundary_curve_elements'], self.lane_sections[0]['lanes'][-1]['boundary_curve_elements'])
+        lane_mesh = road_utils.create_band_mesh(self.lane_sections[0]['lanes'][0]['boundary_curve_elements'], self.lane_sections[0]['lanes'][-1]['boundary_curve_elements'])
         lane_object_name = 'lane_object_' + str(self.road_id) + '_' + str(0) + '_' + str(-1)
         lane_object = bpy.data.objects.new(lane_object_name, lane_mesh)
         lane_object['type'] = 'lane'
@@ -93,11 +94,11 @@ class DrawRoad(DrawCurveBase):
         self.update_default_lane_section()
 
         lane_object = self.lane_to_object_map[(0, 1)]
-        lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][1]['boundary_curve_elements'], self.lane_sections[0]['lanes'][0]['boundary_curve_elements'])
+        lane_mesh = road_utils.create_band_mesh(self.lane_sections[0]['lanes'][1]['boundary_curve_elements'], self.lane_sections[0]['lanes'][0]['boundary_curve_elements'])
         helpers.replace_mesh(lane_object, lane_mesh)
 
         lane_object = self.lane_to_object_map[(0, -1)]
-        lane_mesh = utils.create_band_mesh(self.lane_sections[0]['lanes'][0]['boundary_curve_elements'], self.lane_sections[0]['lanes'][-1]['boundary_curve_elements'])
+        lane_mesh = road_utils.create_band_mesh(self.lane_sections[0]['lanes'][0]['boundary_curve_elements'], self.lane_sections[0]['lanes'][-1]['boundary_curve_elements'])
         helpers.replace_mesh(lane_object, lane_mesh)
 
     def remove_default_road(self):
@@ -111,9 +112,9 @@ class DrawRoad(DrawCurveBase):
     def xxxxxxx(self):
         for lane_section in self.lane_sections:
             for lane_id in range(lane_section['left_most_lane_index'], 0, -1):
-                utils.create_band_mesh(lane_section['lanes'][lane_id]['boundary_curve_elements'], lane_section['lanes'][lane_id - 1]['boundary_curve_elements'])
+                road_utils.create_band_mesh(lane_section['lanes'][lane_id]['boundary_curve_elements'], lane_section['lanes'][lane_id - 1]['boundary_curve_elements'])
             for lane_id in range(lane_section['right_most_lane_index'], 0, 1):
-                utils.create_band_mesh(lane_section['lanes'][lane_id + 1]['boundary_curve_elements'], lane_section['lanes'][lane_id]['boundary_curve_elements'])
+                road_utils.create_band_mesh(lane_section['lanes'][lane_id + 1]['boundary_curve_elements'], lane_section['lanes'][lane_id]['boundary_curve_elements'])
 
 
 
@@ -126,7 +127,7 @@ class DrawRoad(DrawCurveBase):
         obj.matrix_world = mat_translation @ mat_rotation
 
     def create_default_lane_section(self):
-        default_lane_section = utils.create_lane_section(self.reference_line_elements)
+        default_lane_section = road_utils.create_lane_section(self.reference_line_elements)
         self.lane_sections.append(default_lane_section)
 
     def update_default_lane_section(self):
@@ -136,8 +137,8 @@ class DrawRoad(DrawCurveBase):
         del self.lane_sections[0]['lanes'][1]['boundary_curve_elements']
         del self.lane_sections[0]['lanes'][-1]['boundary_curve_elements']
 
-        utils.add_lane(self.lane_sections[0], 'left')
-        utils.add_lane(self.lane_sections[0], 'right')
+        road_utils.add_lane(self.lane_sections[0], 'left')
+        road_utils.add_lane(self.lane_sections[0], 'right')
 
     def merge_lane_section(self):
         '''

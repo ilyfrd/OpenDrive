@@ -4,6 +4,7 @@ import bpy
 from . import utils
 from . import draw_utils
 from . import math_utils
+from . import road_utils
 from . import helpers
 from . import map_scene_data
 
@@ -104,9 +105,9 @@ class AdjustLaneBoundary(DrawCurveBase):
 
                 new_lane_mesh = None
                 if lane_id == selected_section['left_most_lane_index']:
-                    new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id]['boundary_curve_elements'], selected_section['lanes'][lane_id - 1]['boundary_curve_elements'])
+                    new_lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][lane_id]['boundary_curve_elements'], selected_section['lanes'][lane_id - 1]['boundary_curve_elements'])
                 elif lane_id == selected_section['right_most_lane_index']:
-                    new_lane_mesh = utils.create_band_mesh(selected_section['lanes'][lane_id + 1]['boundary_curve_elements'], selected_section['lanes'][lane_id]['boundary_curve_elements'])
+                    new_lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][lane_id + 1]['boundary_curve_elements'], selected_section['lanes'][lane_id]['boundary_curve_elements'])
                 helpers.replace_mesh(self.selected_lane, new_lane_mesh)
             
             if self.selected_lane != None:

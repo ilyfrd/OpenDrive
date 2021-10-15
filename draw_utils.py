@@ -5,6 +5,8 @@ from math import fabs, dist, acos
 from . import math_utils
 from . import helpers
 from . import utils
+from . import road_utils
+
 
 
 debug_line_map = {}
@@ -27,7 +29,7 @@ def draw_curve(id, curve):
     faces = []
 
     vertices = utils.generate_vertices_from_curve_elements(curve)
-    utils.remove_duplicated_point(vertices)
+    road_utils.remove_duplicated_point(vertices)
 
     for index in range(0, len(vertices) - 1):
         edges.append((index, index + 1))
