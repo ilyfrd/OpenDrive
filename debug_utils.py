@@ -1,12 +1,14 @@
 import bpy
-import random
-from mathutils import Vector
 
+from math import fabs, dist, acos
+
+from . import math_utils
 from . import helpers
 from . import utils
 
 
 debug_line_map = {}
+debug_dashed_line_map = {}
 debug_arc_map = {}
 debug_point_map = {}
 debug_curve_map = {}
@@ -63,6 +65,56 @@ def draw_debug_arc(id, arc):
         arc_object = bpy.data.objects.new('arc_object', arc_mesh)
         current_context.scene.collection.objects.link(arc_object)
         debug_arc_map[id] = arc_object
+
+def draw_debug_dashed_line(id, start_point, end_point, dash_size, gap_size):
+    '''
+    首先绘制gap，然后绘制dash，交替进行。
+    '''
+    vertices = []
+    edges = []
+    faces = []
+
+    vertex_index = -1
+
+    line_length = dist(start_point, end_point)
+
+    line_direction = math_utils.vector_subtract(end_point, start_point)
+    line_direction.normalize()
+
+    drewLength = 0.0
+    drawDash = False
+    while drewLength < line_length:
+      if drawDash:
+        startPoint = math_utils.vector_add(start_point, math_utils.vector_scale(line_direction, drewLength))
+        endPoint = math_utils.vector_add(start_point, math_utils.vector_scale(line_direction, drewLength + dash_size))
+
+        vertices.append(startPoint)
+        vertices.append(endPoint)
+        vertex_index += 2
+        edges.append((vertex_index - 1, vertex_index))
+
+        drewLength += dash_size
+      else:
+        drewLength += gap_size
+
+      drawDash = not drawDash
+
+    dashed_line_mesh = bpy.data.meshes.new('dashed_line_mesh')
+    dashed_line_mesh.from_pydata(vertices, edges, faces)
+
+    if id in debug_dashed_line_map:
+        dashed_line_object = debug_dashed_line_map[id]
+        helpers.replace_mesh(dashed_line_object, dashed_line_mesh)
+    else:
+        dashed_line_object = bpy.data.objects.new('dashed_line_object', dashed_line_mesh)
+        current_context.scene.collection.objects.link(dashed_line_object)
+        debug_dashed_line_map[id] = dashed_line_object
+
+def remove_debug_dashed_line(id):
+    if id in debug_dashed_line_map:
+        dashed_line = debug_dashed_line_map[id]
+        bpy.data.objects.remove(dashed_line, do_unlink=True)
+        del debug_dashed_line_map[id]
 
 def draw_debug_line(id, point_a, point_b):
     vertices = [point_a, point_b]

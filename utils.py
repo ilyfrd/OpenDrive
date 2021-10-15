@@ -172,7 +172,7 @@ def generate_new_curve_by_offset(curve, offset, direction):
     def generate_new_point(origin, tangent):
         normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
         normal_vector = normal_vector_of_xy_plane.cross(tangent).normalized()
-        math_utils.vector_scale(normal_vector, offset)
+        math_utils.vector_scale_ref(normal_vector, offset)
 
         if direction == 'left':
             normal_vector.negate()
@@ -348,11 +348,11 @@ def get_arc_geometry_info(arc_element):
     # 计算arc的中心点坐标
     start_point_to_center_vector = arc_element['start_tangent'].cross(normal_vector_of_xy_plane)
     start_point_to_center_vector.normalize()
-    math_utils.vector_scale(start_point_to_center_vector, infinite_line_multiplier) 
+    math_utils.vector_scale_ref(start_point_to_center_vector, infinite_line_multiplier) 
     start_point_to_center_vector_end_point = math_utils.vector_add(arc_element['start_point'], start_point_to_center_vector)
     end_point_to_center_vector = arc_element['end_tangent'].cross(normal_vector_of_xy_plane)
     end_point_to_center_vector.normalize()
-    math_utils.vector_scale(end_point_to_center_vector, infinite_line_multiplier) 
+    math_utils.vector_scale_ref(end_point_to_center_vector, infinite_line_multiplier) 
     end_point_to_center_vector_end_point = math_utils.vector_add(arc_element['end_point'], end_point_to_center_vector)
 
     center_point = geometry.intersect_line_line(arc_element['start_point'], 
@@ -377,7 +377,7 @@ def get_point_on_line_by_distance(line, distance):
     start_point = line['start_point']
     line_direction = line['start_tangent'].copy()
     line_direction.normalize()
-    math_utils.vector_scale(line_direction, distance)
+    math_utils.vector_scale_ref(line_direction, distance)
 
     return math_utils.vector_add(start_point, line_direction)
 
@@ -412,7 +412,7 @@ def split_arc(arc, split_point):
 
     normal_vector =  arc['start_tangent'].cross(arc['end_tangent'])
     if normal_vector.z > 0:
-        math_utils.vector_scale(tangent_at_split_point, -1)
+        math_utils.vector_scale_ref(tangent_at_split_point, -1)
 
     pre_arc = arc.copy()
     pre_arc['end_point'] = split_point.copy()

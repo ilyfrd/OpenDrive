@@ -63,12 +63,15 @@ class SegmentRoad(bpy.types.Operator):
     def draw_segmenting_line(self, raycast_point, projected_point):
         projected_point_to_raycast_point_vector = math_utils.vector_subtract(raycast_point, projected_point)
         projected_point_to_raycast_point_vector.normalize()
-        math_utils.vector_scale(projected_point_to_raycast_point_vector, 5)
+        math_utils.vector_scale_ref(projected_point_to_raycast_point_vector, 5)
         one_side_point = math_utils.vector_add(projected_point, projected_point_to_raycast_point_vector)
-        math_utils.vector_scale(projected_point_to_raycast_point_vector, -1)
+        math_utils.vector_scale_ref(projected_point_to_raycast_point_vector, -1)
         another_side_point = math_utils.vector_add(projected_point, projected_point_to_raycast_point_vector)
 
         debug_utils.draw_debug_line('segmenting_line', one_side_point, another_side_point)
+
+    def remove_segmenting_line(self):
+        debug_utils.remove_debug_line('segmenting_line')
 
     @classmethod
     def poll(cls, context):
@@ -133,7 +136,7 @@ class SegmentRoad(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
-            debug_utils.remove_debug_line('segmenting_line')
+            self.remove_segmenting_line()
            
             self.clean_up(context)
 

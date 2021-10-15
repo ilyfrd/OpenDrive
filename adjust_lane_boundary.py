@@ -25,6 +25,21 @@ class AdjustLaneBoundary(DrawCurveBase):
     def draw_lane_boundary(self):
         debug_utils.draw_debug_curve('lane_boundary', self.reference_line_elements)
 
+    def draw_end_tangent(self):
+        last_element = self.reference_line_elements[len(self.reference_line_elements) - 1]
+
+        line_direction = last_element['end_tangent'].copy()
+        line_direction.normalize()
+        math_utils.vector_scale_ref(line_direction, 10)
+
+        line_start_point = last_element['end_point'].copy()
+        line_end_point = math_utils.vector_add(line_start_point, line_direction)
+
+        debug_utils.draw_debug_dashed_line('adjust_lane_boundary', line_start_point, line_end_point, 3, 2)
+
+    def remove_end_tangent(self):
+        debug_utils.remove_debug_dashed_line('adjust_lane_boundary')
+
     @classmethod
     def poll(cls, context):
         return context.area.type == 'VIEW_3D'
@@ -43,6 +58,7 @@ class AdjustLaneBoundary(DrawCurveBase):
         if event.type == 'MOUSEMOVE':
             if len(self.reference_line_elements) > 0:
                 self.draw_lane_boundary()
+                self.draw_end_tangent()
 
             return {'RUNNING_MODAL'}
 
@@ -70,6 +86,8 @@ class AdjustLaneBoundary(DrawCurveBase):
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
+            self.remove_end_tangent()
+
             element_number = len(self.reference_line_elements)
 
             if element_number <= 1:

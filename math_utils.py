@@ -20,6 +20,15 @@ def vector_subtract(first_vector, second_vector):
     return result
 
 def vector_scale(vector, scale_ratio):
+    result = Vector((0, 0, 0))
+
+    result[0] = vector[0] * scale_ratio
+    result[1] = vector[1] * scale_ratio
+    result[2] = vector[2] * scale_ratio
+
+    return result
+
+def vector_scale_ref(vector, scale_ratio):
     vector[0] *= scale_ratio
     vector[1] *= scale_ratio
     vector[2] *= scale_ratio
@@ -44,7 +53,7 @@ def project_point_onto_finite_arc(point, arc):
 
     center_to_current_point_vector = vector_subtract(point, center_point)
     center_to_current_point_vector.normalize()
-    vector_scale(center_to_current_point_vector, 10000)
+    vector_scale_ref(center_to_current_point_vector, 10000)
     point_for_intersection = vector_add(center_point, center_to_current_point_vector)
     projected_point = geometry.intersect_line_sphere(center_point, point_for_intersection, center_point, arc_radius)[0]
 
