@@ -5,7 +5,7 @@ from mathutils import Vector, Matrix, geometry
 from math import fabs, dist, acos
 
 from . import utils
-from . import debug_utils
+from . import draw_utils
 from . import math_utils
 from . import helpers
 from . import map_scene_data

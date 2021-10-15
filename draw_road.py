@@ -6,7 +6,7 @@ from math import fabs, dist, acos
 from . import helpers
 from . import utils
 from . import math_utils
-from . import debug_utils
+from . import draw_utils
 from . import map_scene_data
 from . draw_curve_base import DrawCurveBase
 
@@ -195,7 +195,7 @@ class DrawRoad(DrawCurveBase):
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
-        debug_utils.set_context(context)
+        draw_utils.set_context(context)
 
         bpy.ops.object.select_all(action='DESELECT')
         context.window_manager.modal_handler_add(self)

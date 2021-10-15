@@ -2,7 +2,7 @@
 import bpy
 
 from . import utils
-from . import debug_utils
+from . import draw_utils
 from . import math_utils
 from . import helpers
 from . import map_scene_data
@@ -115,7 +115,7 @@ class AdjustLaneNumbers(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
-        debug_utils.set_context(context)
+        draw_utils.set_context(context)
 
         bpy.ops.object.select_all(action='DESELECT')
         context.window_manager.modal_handler_add(self)

@@ -7,7 +7,7 @@ from mathutils import geometry, Vector, Matrix
 from math import acos, ceil, radians, dist
 from numpy import deg2rad
 from . import math_utils
-from . import debug_utils
+from . import draw_utils
 
 
 def add_lane(lane_section, direction):

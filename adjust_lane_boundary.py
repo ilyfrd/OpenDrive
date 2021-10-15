@@ -2,7 +2,7 @@
 import bpy
 
 from . import utils
-from . import debug_utils
+from . import draw_utils
 from . import math_utils
 from . import helpers
 from . import map_scene_data
@@ -23,10 +23,10 @@ class AdjustLaneBoundary(DrawCurveBase):
         self.lane_boundary = None 
 
     def draw_lane_boundary(self):
-        debug_utils.draw_debug_curve('lane_boundary', self.reference_line_elements)
+        draw_utils.draw_curve('lane_boundary', self.reference_line_elements)
 
     def remove_lane_boundary(self):
-        debug_utils.remove_debug_curve('lane_boundary')
+        draw_utils.remove_curve('lane_boundary')
 
     def draw_end_tangent(self):
         last_element = self.reference_line_elements[len(self.reference_line_elements) - 1]
@@ -38,10 +38,10 @@ class AdjustLaneBoundary(DrawCurveBase):
         line_start_point = last_element['end_point'].copy()
         line_end_point = math_utils.vector_add(line_start_point, line_direction)
 
-        debug_utils.draw_debug_dashed_line('adjust_lane_boundary', line_start_point, line_end_point, 0.5, 0.3)
+        draw_utils.draw_dashed_line('adjust_lane_boundary', line_start_point, line_end_point, 0.5, 0.3)
 
     def remove_end_tangent(self):
-        debug_utils.remove_debug_dashed_line('adjust_lane_boundary')
+        draw_utils.remove_dashed_line('adjust_lane_boundary')
 
     @classmethod
     def poll(cls, context):
@@ -129,7 +129,7 @@ class AdjustLaneBoundary(DrawCurveBase):
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
-        debug_utils.set_context(context)
+        draw_utils.set_context(context)
 
         bpy.ops.object.select_all(action='DESELECT')
         context.window_manager.modal_handler_add(self)

@@ -2,7 +2,7 @@
 import bpy
 
 from . import utils
-from . import debug_utils
+from . import draw_utils
 from . import math_utils
 from . import helpers
 from . import map_scene_data
@@ -68,10 +68,10 @@ class SegmentRoad(bpy.types.Operator):
         math_utils.vector_scale_ref(projected_point_to_raycast_point_vector, -1)
         another_side_point = math_utils.vector_add(projected_point, projected_point_to_raycast_point_vector)
 
-        debug_utils.draw_debug_line('segmenting_line', one_side_point, another_side_point)
+        draw_utils.draw_line('segmenting_line', one_side_point, another_side_point)
 
     def remove_segmenting_line(self):
-        debug_utils.remove_debug_line('segmenting_line')
+        draw_utils.remove_line('segmenting_line')
 
     @classmethod
     def poll(cls, context):
@@ -157,7 +157,7 @@ class SegmentRoad(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
-        debug_utils.set_context(context)
+        draw_utils.set_context(context)
 
         bpy.ops.object.select_all(action='DESELECT')
         context.window_manager.modal_handler_add(self)

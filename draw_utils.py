@@ -21,7 +21,7 @@ def set_context(context):
     global current_context
     current_context = context
 
-def draw_debug_curve(id, curve):
+def draw_curve(id, curve):
     vertices = []
     edges = []
     faces = []
@@ -43,13 +43,13 @@ def draw_debug_curve(id, curve):
         current_context.scene.collection.objects.link(curve_object)
         debug_curve_map[id] = curve_object
 
-def remove_debug_curve(id):
+def remove_curve(id):
     if id in debug_curve_map:
         curve = debug_curve_map[id]
         bpy.data.objects.remove(curve, do_unlink=True)
         del debug_curve_map[id]
 
-def draw_debug_arc(id, arc):
+def draw_arc(id, arc):
     vertices = utils.generate_vertices_from_arc(arc)
     edges = []
     for index in range(0, len(vertices) - 1):
@@ -66,7 +66,7 @@ def draw_debug_arc(id, arc):
         current_context.scene.collection.objects.link(arc_object)
         debug_arc_map[id] = arc_object
 
-def draw_debug_dashed_line(id, start_point, end_point, dash_size, gap_size):
+def draw_dashed_line(id, start_point, end_point, dash_size, gap_size):
     '''
     首先绘制gap，然后绘制dash，交替进行。
     '''
@@ -110,13 +110,13 @@ def draw_debug_dashed_line(id, start_point, end_point, dash_size, gap_size):
         current_context.scene.collection.objects.link(dashed_line_object)
         debug_dashed_line_map[id] = dashed_line_object
 
-def remove_debug_dashed_line(id):
+def remove_dashed_line(id):
     if id in debug_dashed_line_map:
         dashed_line = debug_dashed_line_map[id]
         bpy.data.objects.remove(dashed_line, do_unlink=True)
         del debug_dashed_line_map[id]
 
-def draw_debug_line(id, point_a, point_b):
+def draw_line(id, point_a, point_b):
     vertices = [point_a, point_b]
     edges = [(0, 1)]
     faces = []
@@ -131,13 +131,13 @@ def draw_debug_line(id, point_a, point_b):
         current_context.scene.collection.objects.link(line_object)
         debug_line_map[id] = line_object
 
-def remove_debug_line(id):
+def remove_line(id):
     if id in debug_line_map:
         line = debug_line_map[id]
         bpy.data.objects.remove(line, do_unlink=True)
         del debug_line_map[id]
 
-def draw_debug_point(id, point):
+def draw_point(id, point):
     point_magnitude = 3
 
     x_forward = point.copy()
