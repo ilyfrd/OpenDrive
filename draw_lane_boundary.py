@@ -110,22 +110,7 @@ class DrawLaneBoundary(bpy.types.Operator):
                     context.scene.collection.objects.link(object)
 
                     selected_section['lanes'][lane_id]['lane_boundary_drew'] = True
-
-            return {'RUNNING_MODAL'}
-
-        elif event.type in {'RIGHTMOUSE'} and event.value in {'RELEASE'}:
-            hit, raycast_point, raycast_object = math_utils.raycast_mouse_to_object(context, event, 'lane')
-            if hit:
-                name_sections = raycast_object.name.split('_')
-                last_index = len(name_sections) - 1
-                road_id = int(name_sections[last_index - 2])
-                section_id = int(name_sections[last_index - 1])
-                lane_id = int(name_sections[last_index])
-
-                selected_road = map_scene_data.get_road_data(road_id)
-                selected_section = selected_road['lane_sections'][section_id]
-
-                if selected_section['lanes'][lane_id]['lane_boundary_drew'] == True:
+                else:
                     boundary_name = 'lane_boundary_object_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
                     boundary_object = context.scene.objects.get(boundary_name)
                     bpy.data.objects.remove(boundary_object, do_unlink=True)
@@ -135,7 +120,6 @@ class DrawLaneBoundary(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
-           
 
             self.clean_up(context)
 
