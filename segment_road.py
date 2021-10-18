@@ -1,10 +1,10 @@
 
 import bpy
 
-from . import basic_element_utils
-from . import draw_utils
-from . import math_utils
-from . import road_utils
+from .utils import basic_element_utils
+from .utils import draw_utils
+from .utils import math_utils
+from .utils import road_utils
 from . import helpers
 from . import map_scene_data
 

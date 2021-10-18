@@ -4,9 +4,9 @@ from mathutils import Vector, Matrix, geometry
 from math import fabs, dist, acos
 
 from . import helpers
-from . import basic_element_utils
-from . import road_utils
-from . import draw_utils
+from .utils import basic_element_utils
+from .utils import road_utils
+from .utils import draw_utils
 from . import map_scene_data
 from . draw_curve_base import DrawCurveBase
 

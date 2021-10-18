@@ -3,7 +3,7 @@ import bpy
 from math import fabs, dist, acos
 
 from . import math_utils
-from . import helpers
+from .. import helpers
 from . import basic_element_utils
 from . import road_utils
 

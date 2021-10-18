@@ -1,13 +1,10 @@
 
 import bpy
-import bmesh
-from mathutils import Vector, Matrix, geometry
 from math import fabs, dist, acos
 
-from . import basic_element_utils
-from . import math_utils
+from .utils import basic_element_utils
+from .utils import math_utils
 from . import helpers
-from . import map_scene_data
 
 
 class DrawCurveBase(bpy.types.Operator):

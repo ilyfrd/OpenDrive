@@ -1,9 +1,9 @@
 
 import bpy
 
-from . import draw_utils
-from . import math_utils
-from . import basic_element_utils
+from .utils import draw_utils
+from .utils import math_utils
+from .utils import basic_element_utils
 from . import map_scene_data
 
 
