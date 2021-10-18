@@ -21,8 +21,7 @@ class DrawCurveBase(bpy.types.Operator):
 
     def __init__(self):
         self.last_selected_point = None # 上一次点击鼠标左键选择的点。
-        self.raycast_point = None # 当前光标所在位置raycast到xy平面得到的点。
-        self.varing_element_was_set = False
+        self.dynamic_element_was_added = False # 动态变化的未确定元素是否已经加入reference_line_elements。
         self.reference_line_elements = [] # 保存道路参考线的构成元素，即line和arc元素。
         self.current_element = { # current_element是随鼠标位置动态变化的未确定的元素，是reference_line_elements中的最后一个元素。
             'type': 'line', # 元素类型，line或者arc。
@@ -34,12 +33,12 @@ class DrawCurveBase(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type == 'MOUSEMOVE':
-            self.raycast_point = helpers.mouse_to_xy_plane(context, event)
+            raycast_point = helpers.mouse_to_xy_plane(context, event)
 
             if self.last_selected_point is None: # 道路参考线第一个元素的start point尚未确定。
                 return {'RUNNING_MODAL'} 
 
-            if dist(self.last_selected_point, self.raycast_point) < 0.0001:
+            if dist(self.last_selected_point, raycast_point) < 0.0001:
                 return {'RUNNING_MODAL'} 
 
             current_element_number = len(self.reference_line_elements)
@@ -48,10 +47,10 @@ class DrawCurveBase(bpy.types.Operator):
                 self.current_element['start_point'] = self.last_selected_point
 
                 if current_element_number < 2: # reference_line_elements中尚没有确定的元素。
-                    self.current_element['end_point'] = self.raycast_point
+                    self.current_element['end_point'] = raycast_point
                 else: # reference_line_elements中已经有确定的元素了。
                     pre_element = self.reference_line_elements[current_element_number - 2]
-                    self.current_element['end_point'] = math_utils.project_point_onto_line(self.raycast_point, pre_element['end_point'], pre_element['end_tangent'])
+                    self.current_element['end_point'] = math_utils.project_point_onto_line(raycast_point, pre_element['end_point'], pre_element['end_tangent'])
 
                 tangent = math_utils.vector_subtract(self.current_element['end_point'], self.current_element['start_point'])
                 self.current_element['start_tangent'] = tangent
@@ -59,32 +58,32 @@ class DrawCurveBase(bpy.types.Operator):
 
             elif self.current_element['type'] == 'arc': # 当前正在绘制的元素是arc。
                 self.current_element['start_point'] = self.last_selected_point
-                self.current_element['end_point'] = self.raycast_point
+                self.current_element['end_point'] = raycast_point
                 self.current_element['start_tangent'] = self.reference_line_elements[current_element_number - 2]['end_tangent']
                 self.current_element['end_tangent'] = basic_element_utils.computer_arc_end_tangent(self.current_element['start_point'],
                                                                                     self.current_element['start_tangent'],
                                                                                     self.current_element['end_point'])
 
-            if self.varing_element_was_set == False:
+            if self.dynamic_element_was_added == False:
                 self.reference_line_elements.append(self.current_element.copy())
-                self.varing_element_was_set = True
+                self.dynamic_element_was_added = True
             else:
-                varing_element = self.reference_line_elements[len(self.reference_line_elements) - 1]
-                varing_element['type'] = self.current_element['type']
-                varing_element['start_point'] = self.current_element['start_point'].copy()
-                varing_element['end_point'] = self.current_element['end_point'].copy()
-                varing_element['start_tangent'] = self.current_element['start_tangent'].copy()
-                varing_element['end_tangent'] = self.current_element['end_tangent'].copy()
+                dynamic_element = self.reference_line_elements[len(self.reference_line_elements) - 1]
+                dynamic_element['type'] = self.current_element['type']
+                dynamic_element['start_point'] = self.current_element['start_point'].copy()
+                dynamic_element['end_point'] = self.current_element['end_point'].copy()
+                dynamic_element['start_tangent'] = self.current_element['start_tangent'].copy()
+                dynamic_element['end_tangent'] = self.current_element['end_tangent'].copy()
 
             return {'RUNNING_MODAL'}
 
         elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-            if self.last_selected_point is None: # 第一次下点
-                self.last_selected_point = self.raycast_point
-                return {'RUNNING_MODAL'}
-
-            self.varing_element_was_set = False
-            self.last_selected_point = self.current_element['end_point']
+            if self.last_selected_point is None: # 第一次下点。
+                raycast_point = helpers.mouse_to_xy_plane(context, event)
+                self.last_selected_point = raycast_point
+            else: # 后续下点。
+                self.dynamic_element_was_added = False
+                self.last_selected_point = self.current_element['end_point']
 
             return {'RUNNING_MODAL'}
 
@@ -96,7 +95,7 @@ class DrawCurveBase(bpy.types.Operator):
             self.last_selected_point = self.reference_line_elements[current_element_number - 2]['start_point']
             self.reference_line_elements.pop()
             self.reference_line_elements.pop()
-            self.varing_element_was_set = False
+            self.dynamic_element_was_added = False
 
             return {'RUNNING_MODAL'}
             
