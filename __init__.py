@@ -73,17 +73,17 @@ class DSC_PT_panel_create(bpy.types.Panel):
         row = innerBox.row(align=True)
         row.operator('dsc.draw_lane_boundary', text='Draw Lane Boundary', icon_value=custom_icons['road_straight'].icon_id)
 
-        innerBox = outerBox.box()
-        innerBox.label(text='Junction')
-        row = innerBox.row(align=True)
-        row.operator('dsc.draw_junction', text='Draw Junction', icon_value=custom_icons['road_straight'].icon_id)
-        row = innerBox.row(align=True)
-        row.operator('dsc.edit_junction', text='Edit Junction', icon_value=custom_icons['road_straight'].icon_id)
+        # innerBox = outerBox.box()
+        # innerBox.label(text='Junction')
+        # row = innerBox.row(align=True)
+        # row.operator('dsc.draw_junction', text='Draw Junction', icon_value=custom_icons['road_straight'].icon_id)
+        # row = innerBox.row(align=True)
+        # row.operator('dsc.edit_junction', text='Edit Junction', icon_value=custom_icons['road_straight'].icon_id)
 
-        box = layout.box()
-        box.label(text='Export (Track, Scenario, Mesh)')
-        row = box.row(align=True)
-        row.operator('dsc.export_driving_scenario', icon='EXPORT')
+        # box = layout.box()
+        # box.label(text='Export (Track, Scenario, Mesh)')
+        # row = box.row(align=True)
+        # row.operator('dsc.export_driving_scenario', icon='EXPORT')
 
 def menu_func_export(self, context):
     self.layout.operator('dsc.export_driving_scenario', text='Driving Scenario (.xosc, .xodr, .fbx/.gltf/.osgb)')
