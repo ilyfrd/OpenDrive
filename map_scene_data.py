@@ -2,6 +2,9 @@ road_id = 0
 road_map = {}
 
 def generate_road_id():
+    '''
+    生成road的唯一id。
+    '''
     global road_id
     road_id += 1
     return road_id

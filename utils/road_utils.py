@@ -40,12 +40,13 @@ def create_lane_section(reference_line_elements):
         'left_most_lane_index': 0,
         'right_most_lane_index': 0
     }
+    
     center_lane = {
         'boundary_curve_elements': []
     }
-    center_lane['boundary_curve_elements'] = reference_line_elements #中心车道
+    center_lane['boundary_curve_elements'] = reference_line_elements 
 
-    default_lane_section['lanes'][0] = center_lane 
+    default_lane_section['lanes'][0] = center_lane #中心车道
 
     add_lane(default_lane_section, 'left')
     add_lane(default_lane_section, 'right')
