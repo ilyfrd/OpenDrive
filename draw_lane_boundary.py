@@ -9,12 +9,15 @@ from . import map_scene_data
 
 class DrawLaneBoundary(bpy.types.Operator):
     bl_idname = 'dsc.draw_lane_boundary'
-    bl_label = 'DSC snap draw operator'
+    bl_label = 'xxx'
     bl_options = {'REGISTER', 'UNDO'}
 
     def __init__(self):
         ''''''
     def generate_lane_boundary_mesh(self, dotted_curve):
+        '''
+        dotted_curve中相邻的element在空间中的位置不是相连的，有一定的gap距离，以实现绘制虚边界线的目的。
+        '''
         vertices = []
         edges = []
         faces = []
@@ -55,14 +58,14 @@ class DrawLaneBoundary(bpy.types.Operator):
                 right_current_index = vertex_index
 
                 arc_vertex_index = 0
-                while arc_vertex_index < len(left_vertices):
-                    left_pre_index = left_current_index
+                while arc_vertex_index < len(left_vertices): # 遍历从arc element生成的所有点（blender中在edit mode下可以看到arc上生成的点的位置）。
                     vertices.append(left_vertices[arc_vertex_index])
+                    left_pre_index = left_current_index
                     vertex_index += 1
                     left_current_index = vertex_index
 
-                    right_pre_index = right_current_index
                     vertices.append(right_vertices[arc_vertex_index])
+                    right_pre_index = right_current_index
                     vertex_index += 1
                     right_current_index = vertex_index
 
@@ -79,8 +82,7 @@ class DrawLaneBoundary(bpy.types.Operator):
         return context.area.type == 'VIEW_3D'
 
     def modal(self, context, event):
-        context.workspace.status_text_set("Place object by clicking, hold CTRL to snap to grid, "
-            "press RIGHTMOUSE to cancel selection, press ESCAPE to exit.")
+        context.workspace.status_text_set("xxx")
         bpy.context.window.cursor_modal_set('CROSSHAIR')
 
         if event.type in {'NONE', 'TIMER', 'TIMER_REPORT', 'EVT_TWEAK_L', 'WINDOW_DEACTIVATE'}:
@@ -100,7 +102,7 @@ class DrawLaneBoundary(bpy.types.Operator):
                 selected_section = selected_road['lane_sections'][section_id]
                 lane_boundary_elements = selected_section['lanes'][lane_id]['boundary_curve_elements']
 
-                if selected_section['lanes'][lane_id]['lane_boundary_drew'] == False:
+                if selected_section['lanes'][lane_id]['lane_boundary_drew'] == False: # 如果该车道的边界线尚未绘制，则绘制该车道的边界线。
                     dotted_curve = basic_element_utils.generate_dotted_curve_from_solid_curve(lane_boundary_elements, 3, 2)
                     mesh = self.generate_lane_boundary_mesh(dotted_curve)
                     object_name = 'lane_boundary_object_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
@@ -110,7 +112,7 @@ class DrawLaneBoundary(bpy.types.Operator):
                     context.scene.collection.objects.link(object)
 
                     selected_section['lanes'][lane_id]['lane_boundary_drew'] = True
-                else:
+                else: # 如果该车道的边界线已经绘制，则删除该车道在场景中对应的边界线object实物。
                     boundary_name = 'lane_boundary_object_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
                     boundary_object = context.scene.objects.get(boundary_name)
                     bpy.data.objects.remove(boundary_object, do_unlink=True)
