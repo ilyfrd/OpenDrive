@@ -9,7 +9,7 @@ from . import map_scene_data
 
 class AdjustLaneNumbers(bpy.types.Operator):
     bl_idname = 'dsc.adjust_lane_numbers'
-    bl_label = 'DSC snap draw operator'
+    bl_label = 'xxx'
     bl_options = {'REGISTER', 'UNDO'}
 
     def __init__(self):
@@ -20,8 +20,7 @@ class AdjustLaneNumbers(bpy.types.Operator):
         return context.area.type == 'VIEW_3D'
 
     def modal(self, context, event):
-        context.workspace.status_text_set("Place object by clicking, hold CTRL to snap to grid, "
-            "press RIGHTMOUSE to cancel selection, press ESCAPE to exit.")
+        context.workspace.status_text_set("xxx")
         bpy.context.window.cursor_modal_set('CROSSHAIR')
 
         if event.type in {'NONE', 'TIMER', 'TIMER_REPORT', 'EVT_TWEAK_L', 'WINDOW_DEACTIVATE'}:
@@ -44,7 +43,7 @@ class AdjustLaneNumbers(bpy.types.Operator):
                 road_object = selected_road['road_object']
                 lane_to_object_map = selected_road['lane_to_object_map']
 
-                if lane_id == selected_section['left_most_lane_index']:
+                if lane_id == selected_section['left_most_lane_index']: # 鼠标选中了最左侧的车道，在该车道的外面增加一个车道。
                     road_utils.add_lane(selected_section, 'left')
                     left_most_lane_index = selected_section['left_most_lane_index']
                     lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][left_most_lane_index]['boundary_curve_elements'], selected_section['lanes'][left_most_lane_index - 1]['boundary_curve_elements'])
@@ -56,7 +55,7 @@ class AdjustLaneNumbers(bpy.types.Operator):
 
                     lane_to_object_map[(section_id, left_most_lane_index)] = lane_object
 
-                elif lane_id == selected_section['right_most_lane_index']:
+                elif lane_id == selected_section['right_most_lane_index']: # 鼠标选中了最右侧的车道，在该车道的外面增加一个车道。
                     road_utils.add_lane(selected_section, 'right')
                     right_most_lane_index = selected_section['right_most_lane_index']   
                     lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][right_most_lane_index + 1]['boundary_curve_elements'], selected_section['lanes'][right_most_lane_index]['boundary_curve_elements'])
@@ -70,7 +69,7 @@ class AdjustLaneNumbers(bpy.types.Operator):
 
             return {'RUNNING_MODAL'}
 
-        elif event.type in {'RIGHTMOUSE'} and event.value in {'RELEASE'}:
+        elif event.type in {'RIGHTMOUSE'} and event.value in {'RELEASE'}: # 删除选中的车道。
             hit, raycast_point, raycast_object = math_utils.raycast_mouse_to_object(context, event, 'lane')
             if hit:
                 name_sections = raycast_object.name.split('_')
@@ -83,24 +82,18 @@ class AdjustLaneNumbers(bpy.types.Operator):
                 selected_section = selected_road['lane_sections'][section_id]
                 lane_to_object_map = selected_road['lane_to_object_map']
 
-                if lane_id == selected_section['left_most_lane_index'] or lane_id == selected_section['right_most_lane_index']:
-                    road_utils.remove_lane(selected_section, lane_id)
-                    bpy.data.objects.remove(raycast_object, do_unlink=True)
+                if lane_id == selected_section['left_most_lane_index'] or lane_id == selected_section['right_most_lane_index']: # 只能删除最外侧的车道。
+                    road_utils.remove_lane(selected_section, lane_id) # 从lane_section中删除该lane的信息。
+                    bpy.data.objects.remove(raycast_object, do_unlink=True) # 删除该lane在场景中的object实物。
                     lane_to_object_map.pop((section_id, lane_id))
 
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
-           
             self.clean_up(context)
 
             return {'FINISHED'}
             
-        elif event.type in {'LEFT_SHIFT'} and event.value in {'RELEASE'}:
-           
-
-            return {'RUNNING_MODAL'}
-        # Zoom
         elif event.type in {'WHEELUPMOUSE'}:
             bpy.ops.view3d.zoom(mx=0, my=0, delta=1, use_cursor_init=False)
         elif event.type in {'WHEELDOWNMOUSE'}:
@@ -109,7 +102,6 @@ class AdjustLaneNumbers(bpy.types.Operator):
             if event.alt:
                 bpy.ops.view3d.view_center_cursor()
 
-        # Catch everything else arriving here
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
