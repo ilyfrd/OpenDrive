@@ -26,7 +26,7 @@ class DrawRoad(DrawCurveBase):
         self.road_id = 0 # road id。
         self.road_reference_line_object = None # 道路参考线 object。
 
-        self.reference_line_segments = [] # 通过对道路参考线进行分段实现车道分段功能。
+        self.reference_line_sections = [] # 通过对道路参考线进行分段实现车道分段功能。
         self.lane_sections = [] # 该road的所有lane section， lane section中保存的是与车道相关的信息，比如车道边界构成元素等，跟车道的object实物表示无关。
         self.lane_to_object_map = {} # key是(lane section index, lane id)， value是lane object，可以通过车道的车道段index和车道id找到该车道在场景中的object实物。
 
@@ -36,7 +36,7 @@ class DrawRoad(DrawCurveBase):
 
     def save_road_data(self):
         road_data = {}
-        road_data['reference_line_segments'] = self.reference_line_segments
+        road_data['reference_line_sections'] = self.reference_line_sections
         road_data['lane_sections'] = self.lane_sections
         road_data['lane_to_object_map'] = self.lane_to_object_map
         road_data['road_object'] = self.road_object
@@ -166,7 +166,7 @@ class DrawRoad(DrawCurveBase):
                 self.reference_line_elements.pop() # 弹出无效的dynamic element。
                 self.update_default_road()
 
-                self.reference_line_segments.append(self.reference_line_elements)
+                self.reference_line_sections.append(self.reference_line_elements)
                 self.create_road_reference_line(context)
                 self.save_road_data()
 
