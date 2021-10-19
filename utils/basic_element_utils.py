@@ -11,6 +11,9 @@ from . import road_utils
 
 
 def generate_new_curve_by_offset(curve, offset, direction):
+    '''
+    把curve中的elements朝direction方向偏移offset的距离，产生新的elements。
+    '''
     def generate_new_point(origin, tangent):
         normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
         normal_vector = normal_vector_of_xy_plane.cross(tangent).normalized()
@@ -52,103 +55,92 @@ def generate_new_curve_by_offset(curve, offset, direction):
     return new_curve
 
 def generate_dotted_curve_from_solid_curve(solid_curve, dash_size, gap_size):
+    '''
+    solid_curve中的element的空间位置是前后相连的，本函数根据dash_size和gap_size从solid_curve的elements中截取出新的elements，
+    这些elements并不保证空间位置前后相连，以实现虚边界线的绘制。
+    '''
     dotted_curve = []
 
     is_generating_dash = True
 
-    copyed_solid_curve = copy.deepcopy(solid_curve)
+    copyed_solid_curve = copy.deepcopy(solid_curve) # 为了不改变solid_curve中的数据，产生一个副本。 
     copyed_dash_size = dash_size
     copyed_gap_size = gap_size
 
     while len(copyed_solid_curve) > 0:
-        element = copyed_solid_curve[0]
+        element = copyed_solid_curve[0] # 每次都从copyed_solid_curve中的第一个element开始截取。
 
-        if is_generating_dash == True:
-            if element['type'] == 'line':
-                line_length = dist(element['start_point'], element['end_point'])
-                if line_length > copyed_dash_size:
+        if is_generating_dash == True: # 截取dash的逻辑。
+            element_length = 0
+            pre_element = None
+            next_element = None
+
+            if element['type'] == 'line': # 当前是在line element上截取。
+                element_length = dist(element['start_point'], element['end_point'])
+                # 当前元素的长度大于要截取的dash的长度，把当前元素一分为二，其中pre_element的长度和要截取的dash的长度相等。
+                if element_length > copyed_dash_size: 
                     split_point = get_point_on_line_by_distance(element, copyed_dash_size)
-                    pre_line, next_line = split_line(element, split_point)
+                    pre_element, next_element = split_line(element, split_point)
 
-                    dotted_curve.append(pre_line)
-                    copyed_solid_curve.pop(0)
-                    copyed_solid_curve.insert(0, next_line)
-
-                    is_generating_dash = not is_generating_dash
-                    copyed_dash_size = dash_size
-                else:
-                    dotted_curve.append(element)
-                    copyed_solid_curve.pop(0)
-
-                    copyed_dash_size -= line_length
-                    if copyed_dash_size < 0.001:
-                        is_generating_dash = not is_generating_dash
-                        copyed_dash_size = dash_size
-
-            elif element['type'] == 'arc':
+            elif element['type'] == 'arc':  # 当前是在arc element上截取。
                 center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
-                arc_length = arc_radian * arc_radius
-                if arc_length > copyed_dash_size:
+                element_length = arc_radian * arc_radius
+                if element_length > copyed_dash_size:
                     split_point = get_point_on_arc_by_distance(element, copyed_dash_size)
-                    pre_arc, next_arc = split_arc(element, split_point)
+                    pre_element, next_element = split_arc(element, split_point)
 
-                    dotted_curve.append(pre_arc)
-                    copyed_solid_curve.pop(0)
-                    copyed_solid_curve.insert(0, next_arc)
+            if element_length > copyed_dash_size: # 当前元素的长度大于要截取的dash的长度，当前元素足够完成dash的截取。
+                dotted_curve.append(pre_element) # pre_element即为要截取的element。
+                copyed_solid_curve.pop(0) # 从copyed_solid_curve中删除当前element。
+                copyed_solid_curve.insert(0, next_element) # 把截取剩下的element插到copyed_solid_curve的前面，成为被截取element。
 
+                is_generating_dash = not is_generating_dash
+                copyed_dash_size = dash_size
+            else: # 当前元素的长度小于要截取的dash的长度，截取当前element全长，不足dash长度的部分从后面的element中截取。
+                dotted_curve.append(element)
+                copyed_solid_curve.pop(0)
+
+                copyed_dash_size -= element_length # dash剩余需要截取的长度。
+                if copyed_dash_size < 0.001:
                     is_generating_dash = not is_generating_dash
                     copyed_dash_size = dash_size
-                else:
-                    dotted_curve.append(element)
-                    copyed_solid_curve.pop(0)
+        else: # 截取gap的逻辑。
+            element_length = 0
+            pre_element = None
+            next_element = None
 
-                    copyed_dash_size -= arc_length
-                    if copyed_dash_size < 0.001:
-                        is_generating_dash = not is_generating_dash
-                        copyed_dash_size = dash_size
-        else:
             if element['type'] == 'line':
-                line_length = dist(element['start_point'], element['end_point'])
-                if line_length > copyed_gap_size:
+                element_length = dist(element['start_point'], element['end_point'])
+                if element_length > copyed_gap_size:
                     split_point = get_point_on_line_by_distance(element, copyed_gap_size)
-                    pre_line, next_line = split_line(element, split_point)
-
-                    copyed_solid_curve.pop(0)
-                    copyed_solid_curve.insert(0, next_line)
-
-                    is_generating_dash = not is_generating_dash
-                    copyed_gap_size = gap_size
-                else:
-                    copyed_solid_curve.pop(0)
-
-                    copyed_gap_size -= line_length
-                    if copyed_gap_size < 0.001:
-                        is_generating_dash = not is_generating_dash
-                        copyed_gap_size = gap_size
-
+                    pre_element, next_element = split_line(element, split_point)
             elif element['type'] == 'arc':
                 center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
-                arc_length = arc_radian * arc_radius
-                if arc_length > copyed_gap_size:
+                element_length = arc_radian * arc_radius
+                if element_length > copyed_gap_size:
                     split_point = get_point_on_arc_by_distance(element, copyed_gap_size)
-                    pre_arc, next_arc = split_arc(element, split_point)
+                    pre_element, next_element = split_arc(element, split_point)
 
-                    copyed_solid_curve.pop(0)
-                    copyed_solid_curve.insert(0, next_arc)
+            if element_length > copyed_gap_size:
+                copyed_solid_curve.pop(0)
+                copyed_solid_curve.insert(0, next_element)
 
+                is_generating_dash = not is_generating_dash
+                copyed_gap_size = gap_size
+            else:
+                copyed_solid_curve.pop(0)
+
+                copyed_gap_size -= element_length
+                if copyed_gap_size < 0.001:
                     is_generating_dash = not is_generating_dash
                     copyed_gap_size = gap_size
-                else:
-                    copyed_solid_curve.pop(0)
-
-                    copyed_gap_size -= arc_length
-                    if copyed_gap_size < 0.001:
-                        is_generating_dash = not is_generating_dash
-                        copyed_gap_size = gap_size
 
     return dotted_curve
         
 def generate_vertices_from_curve_elements(curve_elements):
+    '''
+    从elements生成顶点，用于创建mesh。
+    '''
     vertices = []
     for element in curve_elements:
         if element['type'] == 'line':
@@ -160,6 +152,9 @@ def generate_vertices_from_curve_elements(curve_elements):
     return vertices
 
 def generate_vertices_from_arc(arc):
+    '''
+    按照一定的弧度角间距在arc上生成顶点（比如每隔1°产生一个顶点）。
+    '''
     vertices = []
 
     center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
@@ -184,6 +179,9 @@ def generate_vertices_from_arc(arc):
     return vertices
 
 def get_arc_geometry_info(arc_element):
+    '''
+    获取arc的圆心点坐标，弧度值，半径等信息。
+    '''
     normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
     infinite_line_multiplier = 10000
 
@@ -209,6 +207,9 @@ def get_arc_geometry_info(arc_element):
     return center_point, arc_radian, arc_radius
 
 def computer_arc_end_tangent(start_point, start_tangent, end_point):
+    '''
+    根据start_point, start_tangent, end_point值计算arc元素的end_tangent值。
+    '''
     normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
     center_line_vector = normal_vector_of_xy_plane.cross(end_point - start_point)
     end_tangent = start_tangent.reflect(center_line_vector)
@@ -216,6 +217,9 @@ def computer_arc_end_tangent(start_point, start_tangent, end_point):
     return end_tangent
 
 def get_point_on_line_by_distance(line, distance):
+    '''
+    获取line上和start_point相距distance的点的坐标。
+    '''
     start_point = line['start_point']
     line_direction = line['start_tangent'].copy()
     line_direction.normalize()
@@ -224,6 +228,9 @@ def get_point_on_line_by_distance(line, distance):
     return math_utils.vector_add(start_point, line_direction)
 
 def get_point_on_arc_by_distance(arc, distance):
+    '''
+    获取arc上和start_point相距distance的点的坐标。
+    '''
     center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
     radian = distance / arc_radius
 
@@ -238,6 +245,9 @@ def get_point_on_arc_by_distance(arc, distance):
     return current_point
 
 def split_line(line, split_point):
+    '''
+    把line element在split_point处一分为二。
+    '''
     pre_line = line.copy()
     pre_line['end_point'] = split_point.copy()
 
@@ -247,6 +257,9 @@ def split_line(line, split_point):
     return pre_line, next_line
 
 def split_arc(arc, split_point):
+    '''
+    把arc element在split_point处一分为二。
+    '''
     center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
     normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
     split_point_to_center_point_vector = math_utils.vector_subtract(center_point, split_point)
@@ -267,6 +280,9 @@ def split_arc(arc, split_point):
     return pre_arc, next_arc
 
 def split_reference_line_segment(curve_elements, split_point):
+    '''
+    把curve_elements在split_point处一分为二。
+    '''
     pre_segment = []
     next_segment = []
 
@@ -297,6 +313,9 @@ def split_reference_line_segment(curve_elements, split_point):
     return projected_point, pre_segment, next_segment
 
 def merge_reference_line_segment(pre_segment, next_segment):
+    '''
+    把pre_segment和next_segment合并为一个segment，即将pre_segment的最后一个element和next_segment的第一个element合并。
+    '''
     result_segment = []
 
     pre_segment_len = len(pre_segment)
