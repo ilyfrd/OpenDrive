@@ -12,22 +12,28 @@ from . draw_curve_base import DrawCurveBase
 
 class AdjustLaneBoundary(DrawCurveBase):
     bl_idname = 'dsc.adjust_lane_boundary'
-    bl_label = 'DSC snap draw operator'
+    bl_label = 'xxx'
     bl_options = {'REGISTER', 'UNDO'}
 
     def __init__(self):
         DrawCurveBase.__init__(self)
 
-        self.selected_lane = None
+        self.selected_lane = None # 要修改边界的车道
         self.lane_boundary = None 
 
     def draw_lane_boundary(self):
+        '''
+        绘制车道边界线，以提示新车道边界线位置。
+        '''
         draw_utils.draw_curve('lane_boundary', self.reference_line_elements)
 
     def remove_lane_boundary(self):
         draw_utils.remove_curve('lane_boundary')
 
     def draw_end_tangent(self):
+        '''
+        绘制当前element的end_tangent，供参考。
+        '''
         last_element = self.reference_line_elements[len(self.reference_line_elements) - 1]
 
         line_direction = last_element['end_tangent'].copy()
@@ -47,8 +53,7 @@ class AdjustLaneBoundary(DrawCurveBase):
         return context.area.type == 'VIEW_3D'
 
     def modal(self, context, event):
-        context.workspace.status_text_set("Place object by clicking, hold CTRL to snap to grid, "
-            "press RIGHTMOUSE to cancel selection, press ESCAPE to exit.")
+        context.workspace.status_text_set("xxx")
         bpy.context.window.cursor_modal_set('CROSSHAIR')
 
         if event.type in {'NONE', 'TIMER', 'TIMER_REPORT', 'EVT_TWEAK_L', 'WINDOW_DEACTIVATE'}:
@@ -78,9 +83,9 @@ class AdjustLaneBoundary(DrawCurveBase):
 
                 selected_road = map_scene_data.get_road_data(road_id)
                 selected_section = selected_road['lane_sections'][section_id]
-                if lane_id == selected_section['left_most_lane_index'] or lane_id == selected_section['right_most_lane_index']:
+                if lane_id == selected_section['left_most_lane_index'] or lane_id == selected_section['right_most_lane_index']: # 只能对最外侧的车道进行修改边界的操作。
                     self.selected_lane = raycast_object
-                    self.selected_lane.hide_set(True)
+                    self.selected_lane.hide_set(True) # 隐藏该车道对应的object实物。
 
             return {'RUNNING_MODAL'}
 
@@ -89,7 +94,7 @@ class AdjustLaneBoundary(DrawCurveBase):
             self.remove_end_tangent()
 
             if len(self.reference_line_elements) > 1: 
-                self.reference_line_elements.pop()
+                self.reference_line_elements.pop() # 删除dynamic element。
 
                 name_sections = self.selected_lane.name.split('_')
                 last_index = len(name_sections) - 1
@@ -99,8 +104,9 @@ class AdjustLaneBoundary(DrawCurveBase):
 
                 selected_road = map_scene_data.get_road_data(road_id)
                 selected_section = selected_road['lane_sections'][section_id]
-                selected_section['lanes'][lane_id]['boundary_curve_elements'] = self.reference_line_elements.copy()
+                selected_section['lanes'][lane_id]['boundary_curve_elements'] = self.reference_line_elements.copy() # 用新的道路边界构成元素替换原来的。
 
+                # 更新lane在场景中对应的object实物。
                 new_lane_mesh = None
                 if lane_id == selected_section['left_most_lane_index']:
                     new_lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][lane_id]['boundary_curve_elements'], selected_section['lanes'][lane_id - 1]['boundary_curve_elements'])
@@ -109,13 +115,12 @@ class AdjustLaneBoundary(DrawCurveBase):
                 helpers.replace_mesh(self.selected_lane, new_lane_mesh)
             
             if self.selected_lane != None:
-                self.selected_lane.hide_set(False)
+                self.selected_lane.hide_set(False) # 显示该车道对应的object实物。
            
             self.clean_up(context)
 
             return {'FINISHED'}
             
-        # Zoom
         elif event.type in {'WHEELUPMOUSE'}:
             bpy.ops.view3d.zoom(mx=0, my=0, delta=1, use_cursor_init=False)
         elif event.type in {'WHEELDOWNMOUSE'}:
@@ -124,7 +129,6 @@ class AdjustLaneBoundary(DrawCurveBase):
             if event.alt:
                 bpy.ops.view3d.view_center_cursor()
 
-        # Catch everything else arriving here
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
