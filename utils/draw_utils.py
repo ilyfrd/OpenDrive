@@ -29,7 +29,7 @@ def draw_curve(id, curve):
     faces = []
 
     vertices = basic_element_utils.generate_vertices_from_curve_elements(curve)
-    road_utils.remove_duplicated_point(vertices)
+    road_utils.remove_duplicated_point(vertices) # 从elements生成的点中，前后相连element的首尾顶点是相同的，这里进行去重处理。
 
     for index in range(0, len(vertices) - 1):
         edges.append((index, index + 1))
@@ -70,6 +70,7 @@ def draw_arc(id, arc):
 
 def draw_dashed_line(id, start_point, end_point, dash_size, gap_size):
     '''
+    绘制首尾顶点分别为start_point和end_point的虚直线，dash和gap的长度分别为dash_size和gap_size。
     首先绘制gap，然后绘制dash，交替进行。
     '''
     vertices = []
@@ -140,6 +141,9 @@ def remove_line(id):
         del debug_line_map[id]
 
 def draw_point(id, point):
+    '''
+    以point为中心，绘制十字形状。
+    '''
     point_magnitude = 3
 
     x_forward = point.copy()
