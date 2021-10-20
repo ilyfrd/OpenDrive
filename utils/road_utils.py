@@ -5,6 +5,9 @@ from math import acos, ceil, radians, dist
 from . import basic_element_utils
 
 def add_lane(lane_section, direction):
+    '''
+    在lane_section对应的车道段中沿direction方向（left或right）向外侧增加车道。
+    '''
     reference_lane_id = 0
     new_lane_id = 0
     if direction == 'left':
@@ -40,7 +43,7 @@ def create_lane_section(reference_line_elements):
         'left_most_lane_index': 0,
         'right_most_lane_index': 0
     }
-    
+
     center_lane = {
         'boundary_curve_elements': []
     }
@@ -64,6 +67,11 @@ def remove_duplicated_point(origin_vertices):
     origin_vertices = reduced_vertices
 
 def create_band_mesh(up_boundary, down_boundary):
+    '''
+    创建车道对应的object实物的mesh。
+    mesh由四边形和三角形构成，首先创建四边形，直到up_boundary_vertices、down_boundary_vertices中某一边的顶点用完；接着创建三角形，直到另外一边的顶点用完。
+    通过vertices组建edge和face的顺序是逆时针。
+    '''
     vertices = []
     edges = []
     faces = []
