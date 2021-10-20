@@ -34,29 +34,40 @@ def vector_scale_ref(vector, scale_ratio):
     vector[2] *= scale_ratio
 
 def project_point_onto_line(point, line_start_point, line_direction):
+    '''
+    把point投影到由line_start_point和line_direction确定的直线上（无限长直线），得到投影点projected_point。
+    '''
     line_end_point = vector_add(line_start_point, line_direction)
     projected_point = geometry.intersect_point_line(point, line_start_point, line_end_point)[0]
     return projected_point
 
 def project_point_onto_finite_line(point, line_start_point, line_end_point):
+    '''
+    把point投影到由 line_start_point 和 line_end_point 确定的直线上（有限长直线），得到投影点projected_point。
+    '''
     projected_point = geometry.intersect_point_line(point, line_start_point, line_end_point)[0]
     projected_point_to_line_start_vector = vector_subtract(line_start_point, projected_point)
     projected_point_to_line_end_vector = vector_subtract(line_end_point, projected_point)
     line_start_to_line_end_vector = vector_subtract(line_end_point, line_start_point)
+    # 当投影点坐标在line_start_point和line_end_point之间时，返回该投影点坐标；否则投影点无效。
     if projected_point_to_line_start_vector.magnitude < line_start_to_line_end_vector.magnitude and projected_point_to_line_end_vector.magnitude < line_start_to_line_end_vector.magnitude:
         return projected_point
     else:
         return None
 
 def project_point_onto_finite_arc(point, arc):
+    '''
+    把point投影到arc上，得到投影点projected_point。
+    '''
     center_point, arc_radian, arc_radius = basic_element_utils.get_arc_geometry_info(arc)
 
     center_to_current_point_vector = vector_subtract(point, center_point)
     center_to_current_point_vector.normalize()
-    vector_scale_ref(center_to_current_point_vector, 10000)
+    vector_scale_ref(center_to_current_point_vector, 10000) # 确保center_to_current_point_vector和arc可以相交。
     point_for_intersection = vector_add(center_point, center_to_current_point_vector)
     projected_point = geometry.intersect_line_sphere(center_point, point_for_intersection, center_point, arc_radius)[0]
 
+    # 当投影点在arc上时，投影点有效；当投影点在arc之外时，投影点无效。
     center_to_intersection_point_vector = vector_subtract(projected_point, center_point)
     center_to_arc_start_vector = vector_subtract(arc['start_point'], center_point)
     center_to_arc_end_vector = vector_subtract(arc['end_point'], center_point)
@@ -69,6 +80,7 @@ def project_point_onto_finite_arc(point, arc):
 
 def raycast_mouse_to_object(context, event, type):
     '''
+    type用于过滤场景中的object实物，即raycast只对 obj['type'] == type 的物体有效。
     '''
     region = context.region
     rv3d = context.region_data
