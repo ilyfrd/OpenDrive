@@ -9,11 +9,11 @@ from . import road_utils
 
 
 
-debug_line_map = {}
-debug_dashed_line_map = {}
-debug_arc_map = {}
-debug_point_map = {}
-debug_curve_map = {}
+line_map = {}
+dashed_line_map = {}
+arc_map = {}
+point_map = {}
+curve_map = {}
 
 
 
@@ -37,19 +37,19 @@ def draw_curve(id, curve):
     curve_mesh = bpy.data.meshes.new('curve_mesh')
     curve_mesh.from_pydata(vertices, edges, faces)
 
-    if id in debug_curve_map:
-        curve_object = debug_curve_map[id]
+    if id in curve_map:
+        curve_object = curve_map[id]
         helpers.replace_mesh(curve_object, curve_mesh)
     else:
         curve_object = bpy.data.objects.new('curve_object', curve_mesh)
         current_context.scene.collection.objects.link(curve_object)
-        debug_curve_map[id] = curve_object
+        curve_map[id] = curve_object
 
 def remove_curve(id):
-    if id in debug_curve_map:
-        curve = debug_curve_map[id]
+    if id in curve_map:
+        curve = curve_map[id]
         bpy.data.objects.remove(curve, do_unlink=True)
-        del debug_curve_map[id]
+        del curve_map[id]
 
 def draw_arc(id, arc):
     vertices = basic_element_utils.generate_vertices_from_arc(arc)
@@ -60,13 +60,13 @@ def draw_arc(id, arc):
     arc_mesh = bpy.data.meshes.new('arc_mesh')
     arc_mesh.from_pydata(vertices, edges, faces)
 
-    if id in debug_arc_map:
-        arc_object = debug_arc_map[id]
+    if id in arc_map:
+        arc_object = arc_map[id]
         helpers.replace_mesh(arc_object, arc_mesh)
     else:
         arc_object = bpy.data.objects.new('arc_object', arc_mesh)
         current_context.scene.collection.objects.link(arc_object)
-        debug_arc_map[id] = arc_object
+        arc_map[id] = arc_object
 
 def draw_dashed_line(id, start_point, end_point, dash_size, gap_size):
     '''
@@ -105,19 +105,25 @@ def draw_dashed_line(id, start_point, end_point, dash_size, gap_size):
     dashed_line_mesh = bpy.data.meshes.new('dashed_line_mesh')
     dashed_line_mesh.from_pydata(vertices, edges, faces)
 
-    if id in debug_dashed_line_map:
-        dashed_line_object = debug_dashed_line_map[id]
+    if id in dashed_line_map:
+        dashed_line_object = dashed_line_map[id]
         helpers.replace_mesh(dashed_line_object, dashed_line_mesh)
     else:
         dashed_line_object = bpy.data.objects.new('dashed_line_object', dashed_line_mesh)
         current_context.scene.collection.objects.link(dashed_line_object)
-        debug_dashed_line_map[id] = dashed_line_object
+        dashed_line_map[id] = dashed_line_object
 
 def remove_dashed_line(id):
-    if id in debug_dashed_line_map:
-        dashed_line = debug_dashed_line_map[id]
+    if id in dashed_line_map:
+        dashed_line = dashed_line_map[id]
         bpy.data.objects.remove(dashed_line, do_unlink=True)
-        del debug_dashed_line_map[id]
+        del dashed_line_map[id]
+
+def get_dashed_line(id):
+    result = None
+    if id in dashed_line_map:
+        result = dashed_line_map[id]
+    return result
 
 def draw_line(id, point_a, point_b):
     vertices = [point_a, point_b]
@@ -126,25 +132,25 @@ def draw_line(id, point_a, point_b):
     line_mesh = bpy.data.meshes.new('line_mesh')
     line_mesh.from_pydata(vertices, edges, faces)
 
-    if id in debug_line_map:
-        line_object = debug_line_map[id]
+    if id in line_map:
+        line_object = line_map[id]
         helpers.replace_mesh(line_object, line_mesh)
     else:
         line_object = bpy.data.objects.new('line_object', line_mesh)
         current_context.scene.collection.objects.link(line_object)
-        debug_line_map[id] = line_object
+        line_map[id] = line_object
 
 def remove_line(id):
-    if id in debug_line_map:
-        line = debug_line_map[id]
+    if id in line_map:
+        line = line_map[id]
         bpy.data.objects.remove(line, do_unlink=True)
-        del debug_line_map[id]
+        del line_map[id]
 
 def draw_point(id, point):
     '''
     以point为中心，绘制十字形状。
     '''
-    point_magnitude = 3
+    point_magnitude = 1
 
     x_forward = point.copy()
     x_forward.x += point_magnitude
@@ -166,12 +172,24 @@ def draw_point(id, point):
 
     point_object = None
 
-    if id in debug_point_map:
-        point_object = debug_point_map[id]
+    if id in point_map:
+        point_object = point_map[id]
         helpers.replace_mesh(point_object, point_mesh)
     else:
         point_object = bpy.data.objects.new('point_object', point_mesh)
         current_context.scene.collection.objects.link(point_object)
-        debug_point_map[id] = point_object
+        point_map[id] = point_object
 
     # point_object.rotation_euler[2] += random.randint(0, 360)
+
+def remove_point(id):
+    if id in point_map:
+        point = point_map[id]
+        bpy.data.objects.remove(point, do_unlink=True)
+        del point_map[id]
+
+def get_point(id):
+    result = None
+    if id in point_map:
+        result = point_map[id]
+    return result

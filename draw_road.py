@@ -147,6 +147,8 @@ class DrawRoad(DrawCurveBase):
         if event.type in {'NONE', 'TIMER', 'TIMER_REPORT', 'EVT_TWEAK_L', 'WINDOW_DEACTIVATE'}:
             return {'PASS_THROUGH'}
 
+        self.current_selected_point = helpers.mouse_to_xy_plane(context, event)
+
         DrawCurveBase.modal(self, context, event)
 
         if event.type == 'MOUSEMOVE':
