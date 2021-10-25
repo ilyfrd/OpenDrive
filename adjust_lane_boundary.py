@@ -72,7 +72,7 @@ class AdjustLaneBoundary(DrawCurveBase):
         draw_utils.remove_point('projected_point_on_end_line')
 
         if len(self.reference_line_elements) > 1: 
-            self.reference_line_elements.pop() # 删除dynamic element。
+            # self.reference_line_elements.pop() # 删除dynamic element。
 
             name_sections = self.selected_lane.name.split('_')
             last_index = len(name_sections) - 1
@@ -162,9 +162,7 @@ class AdjustLaneBoundary(DrawCurveBase):
                     line1_point2 = self.dynamic_element['end_point']
                     line2_point1 = self.end_line_one_side_point
                     line2_point2 = self.end_line_another_side_point
-                    cross_point = geometry.intersect_line_line(line1_point1, line1_point2, line2_point1, line2_point2)[0]
-                    if cross_point != None:
-                        end_line_projected_point = cross_point
+                    end_line_projected_point = geometry.intersect_line_line(line1_point1, line1_point2, line2_point1, line2_point2)[0]
                 elif self.dynamic_element['type'] == 'arc':
                     line_direction = math_utils.vector_subtract(self.end_line_another_side_point, self.end_line_one_side_point)
                     end_line_projected_point = math_utils.project_point_onto_line(self.current_selected_point, self.end_line_one_side_point, line_direction)
@@ -188,9 +186,6 @@ class AdjustLaneBoundary(DrawCurveBase):
                     self.projected_point_on_start_line.hide_set(True)
 
                 if self.lane_end_reference_line.hide_get() == False:
-                    # self.lane_end_reference_line.hide_set(True)
-                    # self.projected_point_on_end_line.hide_set(True)
-
                     self.finish_adjusting()
                     self.clean_up(context)
                     return {'FINISHED'}
@@ -215,66 +210,13 @@ class AdjustLaneBoundary(DrawCurveBase):
                         
             return {'RUNNING_MODAL'}
 
-        elif event.type == 'S' and event.value == 'RELEASE': # S是Start的首字母，表示启动捕捉车道边界线的起始点。
-            # if self.selected_lane != None:
-            #     if self.lane_start_reference_line.hide_get() == True:
-            #         self.lane_start_reference_line.hide_set(False)
-            #         self.projected_point_on_start_line.hide_set(False)
-            #     else:
-            #         self.lane_start_reference_line.hide_set(True)
-            #         self.projected_point_on_start_line.hide_set(True)
-
-            return {'RUNNING_MODAL'}
-
         elif event.type == 'E' and event.value == 'RELEASE': # E是End的首字母，表示启动捕捉车道边界线的结束点。
             if self.selected_lane != None:
-                if self.lane_end_reference_line.hide_get() == True:
-                    self.lane_end_reference_line.hide_set(False)
-                    self.projected_point_on_end_line.hide_set(False)
-                else:
-                    self.lane_end_reference_line.hide_set(True)
-                    self.projected_point_on_end_line.hide_set(True)
+                self.lane_end_reference_line.hide_set(False)
+                self.projected_point_on_end_line.hide_set(False)
 
             return {'RUNNING_MODAL'}
 
-        elif event.type in {'ESC'}:
-            self.remove_lane_boundary()
-            self.remove_end_tangent()
-
-            draw_utils.remove_dashed_line('lane_start_reference_line')
-            draw_utils.remove_dashed_line('lane_end_reference_line')
-
-            draw_utils.remove_point('projected_point_on_start_line')
-            draw_utils.remove_point('projected_point_on_end_line')
-
-            if len(self.reference_line_elements) > 1: 
-                self.reference_line_elements.pop() # 删除dynamic element。
-
-                name_sections = self.selected_lane.name.split('_')
-                last_index = len(name_sections) - 1
-                road_id = int(name_sections[last_index - 2])
-                section_id = int(name_sections[last_index - 1])
-                lane_id = int(name_sections[last_index])
-
-                selected_road = map_scene_data.get_road_data(road_id)
-                selected_section = selected_road['lane_sections'][section_id]
-                selected_section['lanes'][lane_id]['boundary_curve_elements'] = self.reference_line_elements.copy() # 用新的道路边界构成元素替换原来的。
-
-                # 更新lane在场景中对应的object实物。
-                new_lane_mesh = None
-                if lane_id == selected_section['left_most_lane_index']:
-                    new_lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][lane_id]['boundary_curve_elements'], selected_section['lanes'][lane_id - 1]['boundary_curve_elements'])
-                elif lane_id == selected_section['right_most_lane_index']:
-                    new_lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][lane_id + 1]['boundary_curve_elements'], selected_section['lanes'][lane_id]['boundary_curve_elements'])
-                helpers.replace_mesh(self.selected_lane, new_lane_mesh)
-            
-            if self.selected_lane != None:
-                self.selected_lane.hide_set(False) # 显示该车道对应的object实物。
-           
-            self.clean_up(context)
-
-            return {'FINISHED'}
-            
         elif event.type in {'WHEELUPMOUSE'}:
             bpy.ops.view3d.zoom(mx=0, my=0, delta=1, use_cursor_init=False)
         elif event.type in {'WHEELDOWNMOUSE'}:
