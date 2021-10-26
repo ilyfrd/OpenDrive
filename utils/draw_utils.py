@@ -15,13 +15,22 @@ arc_map = {}
 point_map = {}
 curve_map = {}
 
-
+unique_id = 0
 
 current_context = None
 
 def set_context(context):
     global current_context
     current_context = context
+
+
+def generate_unique_id():
+    '''
+    生成唯一id。
+    '''
+    global unique_id
+    unique_id += 1
+    return unique_id
 
 def draw_curve(id, curve):
     vertices = []
@@ -147,25 +156,8 @@ def remove_line(id):
         del line_map[id]
 
 def draw_point(id, point):
-    '''
-    以point为中心，绘制十字形状。
-    '''
-    point_magnitude = 1
-
-    x_forward = point.copy()
-    x_forward.x += point_magnitude
-
-    x_backward = point.copy()
-    x_backward.x -= point_magnitude
-
-    y_forward = point.copy()
-    y_forward.y += point_magnitude
-
-    y_backward = point.copy()
-    y_backward.y -= point_magnitude
-
-    vertices = [x_forward, x_backward, y_forward, y_backward]
-    edges = [(0, 1), (2, 3)]
+    vertices = [point]
+    edges = []
     faces = []
     point_mesh = bpy.data.meshes.new('point_mesh')
     point_mesh.from_pydata(vertices, edges, faces)
@@ -179,14 +171,18 @@ def draw_point(id, point):
         point_object = bpy.data.objects.new('point_object', point_mesh)
         current_context.scene.collection.objects.link(point_object)
         point_map[id] = point_object
-
-    # point_object.rotation_euler[2] += random.randint(0, 360)
-
+    
 def remove_point(id):
     if id in point_map:
         point = point_map[id]
         bpy.data.objects.remove(point, do_unlink=True)
         del point_map[id]
+
+def remove_point_by_feature(feature):
+    for key, value in list(point_map.items()):
+        if isinstance(key, str) and feature in key:
+            bpy.data.objects.remove(value, do_unlink=True)
+            point_map.pop(key)
 
 def get_point(id):
     result = None

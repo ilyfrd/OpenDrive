@@ -46,11 +46,14 @@ def project_point_onto_finite_line(point, line_start_point, line_end_point):
     把point投影到由 line_start_point 和 line_end_point 确定的直线上（有限长直线），得到投影点projected_point。
     '''
     projected_point = geometry.intersect_point_line(point, line_start_point, line_end_point)[0]
-    projected_point_to_line_start_vector = vector_subtract(line_start_point, projected_point)
-    projected_point_to_line_end_vector = vector_subtract(line_end_point, projected_point)
-    line_start_to_line_end_vector = vector_subtract(line_end_point, line_start_point)
-    # 当投影点坐标在line_start_point和line_end_point之间时，返回该投影点坐标；否则投影点无效。
-    if projected_point_to_line_start_vector.magnitude < line_start_to_line_end_vector.magnitude and projected_point_to_line_end_vector.magnitude < line_start_to_line_end_vector.magnitude:
+    
+    line_element = {
+        'type': 'line',
+        'start_point': line_start_point,
+        'end_point': line_end_point
+    }
+
+    if basic_element_utils.check_point_on_element(projected_point, line_element) == True:
         return projected_point
     else:
         return None
@@ -67,13 +70,7 @@ def project_point_onto_finite_arc(point, arc):
     point_for_intersection = vector_add(center_point, center_to_current_point_vector)
     projected_point = geometry.intersect_line_sphere(center_point, point_for_intersection, center_point, arc_radius)[0]
 
-    # 当投影点在arc上时，投影点有效；当投影点在arc之外时，投影点无效。
-    center_to_intersection_point_vector = vector_subtract(projected_point, center_point)
-    center_to_arc_start_vector = vector_subtract(arc['start_point'], center_point)
-    center_to_arc_end_vector = vector_subtract(arc['end_point'], center_point)
-    one_side_normal = center_to_intersection_point_vector.cross(center_to_arc_start_vector)
-    another_side_normal = center_to_intersection_point_vector.cross(center_to_arc_end_vector)
-    if one_side_normal.z * another_side_normal.z < 0:
+    if basic_element_utils.check_point_on_element(projected_point, arc) == True:
         return projected_point
     else:
         return None

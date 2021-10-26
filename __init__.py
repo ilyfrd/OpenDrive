@@ -25,6 +25,13 @@ from . draw_lane_boundary import DrawLaneBoundary
 
 from . draw_junction import DrawJunction
 
+from . check_lane_width_curve_fit import CheckLaneWidthCurveFit
+from . adjust_curve_fit_sections import AdjustCurveFitSections
+
+
+
+
+
 
 bl_info = {
     'name' : 'Open Drive',
@@ -80,6 +87,14 @@ class DSC_PT_panel_create(bpy.types.Panel):
         # row = innerBox.row(align=True)
         # row.operator('dsc.edit_junction', text='Edit Junction', icon_value=custom_icons['road_straight'].icon_id)
 
+        innerBox = outerBox.box()
+        innerBox.label(text='Export')
+        row = innerBox.row(align=True)
+        row.operator('dsc.check_lane_width_curve_fit', text='Check Lane Width Curve Fit', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.adjust_curve_fit_sections', text='Adjust Curve Fit Sections', icon_value=custom_icons['road_straight'].icon_id)
+
+
         # box = layout.box()
         # box.label(text='Export (Track, Scenario, Mesh)')
         # row = box.row(align=True)
@@ -96,7 +111,9 @@ classes = (
     AdjustLaneNumbers,
     AdjustLaneBoundary,
     DrawLaneBoundary,
-    DrawJunction
+    DrawJunction,
+    CheckLaneWidthCurveFit,
+    AdjustCurveFitSections
 )
 
 def register():

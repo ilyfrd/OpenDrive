@@ -216,9 +216,24 @@ def computer_arc_end_tangent(start_point, start_tangent, end_point):
 
     return end_tangent
 
+def computer_curve_length(curve):
+    curve_length = 0
+
+    for element in curve:
+        curve_length += get_element_length(element)
+
+    return curve_length
+
+def get_element_length(element):
+    if element['type'] == 'line':
+        return dist(element['start_point'], element['end_point'])
+    elif element['type'] == 'arc':
+        center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
+        return arc_radian * arc_radius
+
 def get_point_on_line_by_distance(line, distance):
     '''
-    获取line上和start_point相距distance的点的坐标。
+    获取沿直线distance远处点的position。
     '''
     start_point = line['start_point']
     line_direction = line['start_tangent'].copy()
@@ -229,7 +244,7 @@ def get_point_on_line_by_distance(line, distance):
 
 def get_point_on_arc_by_distance(arc, distance):
     '''
-    获取arc上和start_point相距distance的点的坐标。
+    获取沿弧线distance远处点的position。
     '''
     center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
     radian = distance / arc_radius
@@ -243,6 +258,81 @@ def get_point_on_arc_by_distance(arc, distance):
     current_point = math_utils.vector_add(center_point, current_vector)
 
     return current_point
+
+def get_tangent_on_arc_by_distance(arc, distance):
+    '''
+    获取沿弧线distance远处点的tangent。
+    '''
+    center_point, arc_radian, arc_radius = get_arc_geometry_info(arc)
+    radian = distance / arc_radius
+
+    normal_vector =  arc['start_tangent'].cross(arc['end_tangent'])
+    if normal_vector.z < 0:
+        radian = -radian
+
+    result_tangent = arc['start_tangent'].copy()
+    result_tangent.rotate(Matrix.Rotation(radian, 4, 'Z'))
+
+    return result_tangent 
+
+def get_position_and_tangent_on_curve_by_distance(curve, distance):
+    for element in curve:
+        element_length = get_element_length(element)
+
+        if distance > element_length:
+            distance -= element_length
+        else:
+            if element['type'] == 'line':
+                position = get_point_on_line_by_distance(element, distance)
+                tangent = element['start_tangent']
+                return position, tangent
+            elif element['type'] == 'arc': 
+                position = get_point_on_arc_by_distance(element, distance)
+                tangent = get_tangent_on_arc_by_distance(element, distance)
+                return position, tangent
+
+def intersect_line_curve(line_point_a, line_point_b, curve):
+    for element in curve:
+        if element['type'] == 'line':
+            intersected_point = geometry.intersect_line_line(element['start_point'], 
+                                                        element['end_point'], 
+                                                        line_point_a,
+                                                        line_point_b)[0]
+
+            if check_point_on_element(intersected_point, element) == True:
+                return intersected_point
+
+        elif element['type'] == 'arc': 
+            center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
+            intersected_points = geometry.intersect_line_sphere(line_point_a, line_point_b, center_point, arc_radius)
+            for point in intersected_points:
+                if point != None and check_point_on_element(point, element) == True:
+                    return point
+
+def check_point_on_element(point, element):
+    if element['type'] == 'line':
+        intersected_point_to_line_start_vector = math_utils.vector_subtract(element['start_point'], point)
+        intersected_point_to_line_end_vector = math_utils.vector_subtract(element['end_point'], point)
+        line_start_to_line_end_vector = math_utils.vector_subtract(element['end_point'], element['start_point'])
+        # 当投影点坐标在 element['start_point'] 和 element['end_point'] 之间时，返回该投影点坐标；否则投影点无效。
+        if intersected_point_to_line_start_vector.magnitude < line_start_to_line_end_vector.magnitude and intersected_point_to_line_end_vector.magnitude < line_start_to_line_end_vector.magnitude:
+            return True
+        else:
+            return False
+
+    elif element['type'] == 'arc': 
+        center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
+
+        # 当投影点在arc上时，投影点有效；当投影点在arc之外时，投影点无效。
+        center_to_intersection_point_vector = math_utils.vector_subtract(point, center_point)
+        center_to_arc_start_vector = math_utils.vector_subtract(element['start_point'], center_point)
+        center_to_arc_end_vector = math_utils.vector_subtract(element['end_point'], center_point)
+        one_side_normal = center_to_intersection_point_vector.cross(center_to_arc_start_vector)
+        another_side_normal = center_to_intersection_point_vector.cross(center_to_arc_end_vector)
+        if one_side_normal.z * another_side_normal.z < 0:
+            return True
+        else:
+            return False
 
 def split_line(line, split_point):
     '''
