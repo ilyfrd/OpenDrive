@@ -10,6 +10,7 @@ from . import math_utils
 from . import road_utils
 
 
+
 def generate_new_curve_by_offset(curve, offset, direction):
     '''
     把curve中的elements朝direction方向偏移offset的距离，产生新的elements。
@@ -303,8 +304,16 @@ def intersect_line_curve(line_point_a, line_point_b, curve):
                 return intersected_point
 
         elif element['type'] == 'arc': 
+            origin_point = line_point_a
+            direction = math_utils.vector_subtract(line_point_b, line_point_a)
+            direction.normalize()
+            math_utils.vector_scale_ref(direction, 10000) # 确保line和sphere相交
+            one_side_point = math_utils.vector_add(origin_point, direction)
+            math_utils.vector_scale_ref(direction, -1) # direction反向
+            another_side_point = math_utils.vector_add(origin_point, direction)
+
             center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
-            intersected_points = geometry.intersect_line_sphere(line_point_a, line_point_b, center_point, arc_radius)
+            intersected_points = geometry.intersect_line_sphere(one_side_point, another_side_point, center_point, arc_radius)
             for point in intersected_points:
                 if point != None and check_point_on_element(point, element) == True:
                     return point
@@ -425,6 +434,16 @@ def merge_reference_line_segment(pre_segment, next_segment):
         result_segment.append(next_segment[index])
 
     return result_segment
+
+def get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, target_boundary):
+    normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
+    line_length = 30 # 直线长度需足够长，才能保证与curve相交。
+    position, tangent = get_position_and_tangent_on_curve_by_distance(center_lane_boundary, curve_distance)
+    direction = normal_vector_of_xy_plane.cross(tangent).normalized()
+    one_side_point = math_utils.vector_add(position, math_utils.vector_scale(direction, line_length))
+    another_side_point = math_utils.vector_add(position, math_utils.vector_scale(direction, -line_length))
+    intersected_point_on_target_boundary = intersect_line_curve(one_side_point, another_side_point, target_boundary)
+    return intersected_point_on_target_boundary
 
 
         

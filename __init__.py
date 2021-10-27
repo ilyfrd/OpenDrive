@@ -27,8 +27,7 @@ from . draw_junction import DrawJunction
 
 from . check_lane_width_curve_fit import CheckLaneWidthCurveFit
 from . adjust_curve_fit_sections import AdjustCurveFitSections
-
-
+from . draw_segmenting_line_for_curve_fitting import DrawSegmentingLineForCurveFitting
 
 
 
@@ -68,17 +67,17 @@ class DSC_PT_panel_create(bpy.types.Panel):
         outerBox.label(text='Map Primitives')
 
         innerBox = outerBox.box()
-        innerBox.label(text='Road')
+        innerBox.label(text='创建道路')
         row = innerBox.row(align=True)
-        row.operator('dsc.draw_road', text='Draw Road', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.draw_road', text='绘制道路', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
-        row.operator('dsc.segment_road', text='Segment Road', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.segment_road', text='道路分段', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
-        row.operator('dsc.adjust_lane_numbers', text='Adjust Lane Numbers', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.adjust_lane_numbers', text='调整车道数量', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
-        row.operator('dsc.adjust_lane_boundary', text='Adjust Lane Boundary', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.adjust_lane_boundary', text='调整车道边界', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
-        row.operator('dsc.draw_lane_boundary', text='Draw Lane Boundary', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.draw_lane_boundary', text='显示/隐藏车道边界线', icon_value=custom_icons['road_straight'].icon_id)
 
         # innerBox = outerBox.box()
         # innerBox.label(text='Junction')
@@ -88,12 +87,13 @@ class DSC_PT_panel_create(bpy.types.Panel):
         # row.operator('dsc.edit_junction', text='Edit Junction', icon_value=custom_icons['road_straight'].icon_id)
 
         innerBox = outerBox.box()
-        innerBox.label(text='Export')
+        innerBox.label(text='检查道路')
         row = innerBox.row(align=True)
-        row.operator('dsc.check_lane_width_curve_fit', text='Check Lane Width Curve Fit', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.check_lane_width_curve_fit', text='车道宽度三次曲线拟合检查', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
-        row.operator('dsc.adjust_curve_fit_sections', text='Adjust Curve Fit Sections', icon_value=custom_icons['road_straight'].icon_id)
-
+        row.operator('dsc.adjust_curve_fit_sections', text='调整车道宽度元素数量', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.draw_segmenting_line_for_curve_fitting', text='显示/隐藏三次曲线拟合分段线', icon_value=custom_icons['road_straight'].icon_id)
 
         # box = layout.box()
         # box.label(text='Export (Track, Scenario, Mesh)')
@@ -113,7 +113,8 @@ classes = (
     DrawLaneBoundary,
     DrawJunction,
     CheckLaneWidthCurveFit,
-    AdjustCurveFitSections
+    AdjustCurveFitSections,
+    DrawSegmentingLineForCurveFitting
 )
 
 def register():

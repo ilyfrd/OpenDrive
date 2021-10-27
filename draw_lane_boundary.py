@@ -102,7 +102,7 @@ class DrawLaneBoundary(bpy.types.Operator):
                 selected_section = selected_road['lane_sections'][section_id]
                 lane_boundary_elements = selected_section['lanes'][lane_id]['boundary_curve_elements']
 
-                if selected_section['lanes'][lane_id]['lane_boundary_drew'] == False: # 如果该车道的边界线尚未绘制，则绘制该车道的边界线。
+                if selected_section['lanes'][lane_id]['draw_lane_boundary'] == False: # 如果该车道的边界线尚未绘制，则绘制该车道的边界线。
                     dotted_curve = basic_element_utils.generate_dotted_curve_from_solid_curve(lane_boundary_elements, 3, 2)
                     mesh = self.generate_lane_boundary_mesh(dotted_curve)
                     object_name = 'lane_boundary_object_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
@@ -111,13 +111,13 @@ class DrawLaneBoundary(bpy.types.Operator):
                     object.parent = road_object
                     context.scene.collection.objects.link(object)
 
-                    selected_section['lanes'][lane_id]['lane_boundary_drew'] = True
+                    selected_section['lanes'][lane_id]['draw_lane_boundary'] = True
                 else: # 如果该车道的边界线已经绘制，则删除该车道在场景中对应的边界线object实物。
                     boundary_name = 'lane_boundary_object_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
                     boundary_object = context.scene.objects.get(boundary_name)
                     bpy.data.objects.remove(boundary_object, do_unlink=True)
 
-                    selected_section['lanes'][lane_id]['lane_boundary_drew'] = False
+                    selected_section['lanes'][lane_id]['draw_lane_boundary'] = False
 
             return {'RUNNING_MODAL'}
 

@@ -4,8 +4,10 @@ from math import fabs, dist, acos
 
 from . import math_utils
 from .. import helpers
+from .. import map_scene_data
 from . import basic_element_utils
 from . import road_utils
+
 
 
 
@@ -155,6 +157,12 @@ def remove_line(id):
         bpy.data.objects.remove(line, do_unlink=True)
         del line_map[id]
 
+def remove_line_by_feature(feature):
+    for key, value in list(line_map.items()):
+        if isinstance(key, str) and feature in key:
+            bpy.data.objects.remove(value, do_unlink=True)
+            line_map.pop(key)
+
 def draw_point(id, point):
     vertices = [point]
     edges = []
@@ -189,3 +197,38 @@ def get_point(id):
     if id in point_map:
         result = point_map[id]
     return result
+
+def draw_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id):
+    remove_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id)
+
+    road_data = map_scene_data.get_road_data(road_id)
+    lane_sections = road_data['lane_sections']
+    lane_section = lane_sections[section_id]
+    lane = lane_section['lanes'][lane_id]
+
+    curve_fit_sections = lane['curve_fit_sections']
+    for index in range(1, len(curve_fit_sections)):
+        curve_fit_section = curve_fit_sections[index]
+
+        if lane_id > 0: # 左侧车道
+            lane_boundary = lane_section['lanes'][lane_id]['boundary_curve_elements']
+            adjacent_lane_boundary = lane_section['lanes'][lane_id - 1]['boundary_curve_elements']
+        elif lane_id < 0: # 右侧车道
+            lane_boundary = lane_section['lanes'][lane_id]['boundary_curve_elements']
+            adjacent_lane_boundary = lane_section['lanes'][lane_id + 1]['boundary_curve_elements']
+
+        intersected_point_on_lane_boundary = basic_element_utils.get_interseted_point_at_curve_distance(curve_fit_section, 0.001, lane_boundary)
+        intersected_point_on_adjacent_lane_boundary = basic_element_utils.get_interseted_point_at_curve_distance(curve_fit_section, 0.001, adjacent_lane_boundary)
+        draw_line('static_segmenting_line_for_curve_fitting_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id) + '_' + str(index), 
+            intersected_point_on_lane_boundary, 
+            intersected_point_on_adjacent_lane_boundary)
+
+def remove_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id):
+    road_data = map_scene_data.get_road_data(road_id)
+    lane_sections = road_data['lane_sections']
+    lane_section = lane_sections[section_id]
+    lane = lane_section['lanes'][lane_id]
+
+    curve_fit_sections = lane['curve_fit_sections']
+    for index in range(1, len(curve_fit_sections)):
+        remove_line('static_segmenting_line_for_curve_fitting_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id) + '_' + str(index))

@@ -1,8 +1,21 @@
+import copy
 import math
 import bpy
 
 from math import acos, ceil, radians, dist
 from . import basic_element_utils
+
+def construct_default_lane():
+    default_lane = {
+        'boundary_curve_elements': [],
+        'draw_lane_boundary': False,
+        'draw_segmenting_line_for_curve_fitting': False,
+        'draw_cubic_curve_points': False,
+        'cubic_curve_factors_per_width': [],
+        'curve_fit_sections': []
+    }
+
+    return default_lane
 
 def add_lane(lane_section, direction):
     '''
@@ -21,11 +34,11 @@ def add_lane(lane_section, direction):
 
     reference_lane = lane_section['lanes'][reference_lane_id]['boundary_curve_elements']
 
-    new_lane = {
-        'boundary_curve_elements': [],
-        'lane_boundary_drew': False
-    }
+    new_lane = construct_default_lane()
     new_lane['boundary_curve_elements'] = basic_element_utils.generate_new_curve_by_offset(reference_lane, 3, direction)
+
+    center_lane = lane_section['lanes'][0]['boundary_curve_elements']
+    new_lane['curve_fit_sections'] = [copy.deepcopy(center_lane)]
 
     lane_section['lanes'][new_lane_id] = new_lane
 
@@ -44,9 +57,7 @@ def create_lane_section(reference_line_elements):
         'right_most_lane_index': 0
     }
 
-    center_lane = {
-        'boundary_curve_elements': []
-    }
+    center_lane = construct_default_lane()
     center_lane['boundary_curve_elements'] = reference_line_elements 
 
     default_lane_section['lanes'][0] = center_lane #中心车道

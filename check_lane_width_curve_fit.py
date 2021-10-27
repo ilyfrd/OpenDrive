@@ -23,17 +23,7 @@ class CheckLaneWidthCurveFit(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def __init__(self):
-        self.display_cubic_curve_points = False
-
-    def get_interseted_point_at_curve_distance(self, center_lane_boundary, curve_distance, target_boundary):
-        normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
-        line_length = 30 # 直线长度需足够长，才能保证与curve相交。
-        position, tangent = basic_element_utils.get_position_and_tangent_on_curve_by_distance(center_lane_boundary, curve_distance)
-        direction = normal_vector_of_xy_plane.cross(tangent).normalized()
-        one_side_point = math_utils.vector_add(position, math_utils.vector_scale(direction, line_length))
-        another_side_point = math_utils.vector_add(position, math_utils.vector_scale(direction, -line_length))
-        intersected_point_on_target_boundary = basic_element_utils.intersect_line_curve(one_side_point, another_side_point, target_boundary)
-        return intersected_point_on_target_boundary
+        ''''''
 
     def prepare_arrays_for_curve_fit(self, center_lane_boundary, lane_boundary, adjacent_lane_boundary):
         x_array = []
@@ -44,8 +34,8 @@ class CheckLaneWidthCurveFit(bpy.types.Operator):
         sampling_step = curve_length / divisions
 
         def prepare_array_item(curve_distance):
-            intersected_point_on_lane_boundary = self.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, lane_boundary)
-            intersected_point_on_adjacent_lane_boundary = self.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, adjacent_lane_boundary)
+            intersected_point_on_lane_boundary = basic_element_utils.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, lane_boundary)
+            intersected_point_on_adjacent_lane_boundary = basic_element_utils.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, adjacent_lane_boundary)
             sampled_width = dist(intersected_point_on_lane_boundary, intersected_point_on_adjacent_lane_boundary)
             x_array.append(curve_distance)
             y_array.append(sampled_width)
@@ -62,52 +52,61 @@ class CheckLaneWidthCurveFit(bpy.types.Operator):
 
         return x_array, y_array
 
-    def show_cubic_curve_points(self, cubic_curve_factors, center_lane_boundary, lane_boundary, adjacent_lane_boundary):
+    def show_cubic_curve_points(self, lane_identification, cubic_curve_factors, center_lane_boundary, lane_boundary, adjacent_lane_boundary):
         a, b, c, d = cubic_curve_factors
         curve_length = basic_element_utils.computer_curve_length(center_lane_boundary)
-        divisions = 100
+        divisions = 50
         sampling_step = curve_length / divisions
         for index in range(1, divisions):
             curve_distance = sampling_step * index
-            intersected_point_on_lane_boundary = self.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, lane_boundary)
-            intersected_point_on_adjacent_lane_boundary = self.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, adjacent_lane_boundary)
+            intersected_point_on_lane_boundary = basic_element_utils.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, lane_boundary)
+            intersected_point_on_adjacent_lane_boundary = basic_element_utils.get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, adjacent_lane_boundary)
             direction = math_utils.vector_subtract(intersected_point_on_lane_boundary, intersected_point_on_adjacent_lane_boundary)
             direction.normalize()
             math_utils.vector_scale_ref(direction, cubic_curve_function(curve_distance, a, b, c, d))
             check_point = math_utils.vector_add(intersected_point_on_adjacent_lane_boundary, direction)
-            draw_utils.draw_point('cubic_curve_point_' + str(draw_utils.generate_unique_id()), check_point)
+            draw_utils.draw_point('cubic_curve_point_' + lane_identification + '_' + str(draw_utils.generate_unique_id()), check_point)
 
-    def hide_cubic_curve_points(self):
-        draw_utils.remove_point_by_feature('cubic_curve_point_')
+    def hide_cubic_curve_points(self, lane_identification):
+        draw_utils.remove_point_by_feature('cubic_curve_point_' + lane_identification)
 
-    def check_lane_width(self, selected_road):
-        if self.display_cubic_curve_points == False: # 当前没有显示三次曲线点
-            for lane_section in selected_road['lane_sections']:
-                for lane_id in lane_section['lanes']:
-                    if lane_id == 0: # 车道号为0的中心车道是没有宽度的，不需要检查。
-                        continue
+    def check_lane_width(self, road_id, section_id, lane_id):
+        if lane_id == 0: # 车道号为0的中心车道是没有宽度的，不需要检查。
+            return
 
-                    center_lane_boundary = lane_section['lanes'][0]['boundary_curve_elements']
-                    lane_boundary = None
-                    adjacent_lane_boundary = None
-                    
-                    if lane_id > 0: # 左侧车道
-                        lane_boundary = lane_section['lanes'][lane_id]['boundary_curve_elements']
-                        adjacent_lane_boundary = lane_section['lanes'][lane_id - 1]['boundary_curve_elements']
-                    elif lane_id < 0: # 右侧车道
-                        lane_boundary = lane_section['lanes'][lane_id]['boundary_curve_elements']
-                        adjacent_lane_boundary = lane_section['lanes'][lane_id + 1]['boundary_curve_elements']
+        road_data = map_scene_data.get_road_data(road_id)
+        lane_sections = road_data['lane_sections']
+        lane_section = lane_sections[section_id]
+        lane = lane_section['lanes'][lane_id]
 
-                    x_array, y_array = self.prepare_arrays_for_curve_fit(center_lane_boundary, lane_boundary, adjacent_lane_boundary)
-                    cubic_curve_factors, _ = curve_fit(cubic_curve_function, x_array, y_array)
+        lane_identification = str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
 
-                    self.show_cubic_curve_points(cubic_curve_factors, center_lane_boundary, lane_boundary, adjacent_lane_boundary)   
+        if lane['draw_cubic_curve_points'] == False: # 三次曲线点尚未显示，显示之。
+            curve_fit_sections = lane['curve_fit_sections']
+            for section in curve_fit_sections:
+                center_lane_boundary = section
+                lane_boundary = None
+                adjacent_lane_boundary = None
+                
+                if lane_id > 0: # 左侧车道
+                    lane_boundary = lane_section['lanes'][lane_id]['boundary_curve_elements']
+                    adjacent_lane_boundary = lane_section['lanes'][lane_id - 1]['boundary_curve_elements']
+                elif lane_id < 0: # 右侧车道
+                    lane_boundary = lane_section['lanes'][lane_id]['boundary_curve_elements']
+                    adjacent_lane_boundary = lane_section['lanes'][lane_id + 1]['boundary_curve_elements']
 
-            self.display_cubic_curve_points = True   
-        else:
-            self.hide_cubic_curve_points()
-            self.display_cubic_curve_points = False   
- 
+                x_array, y_array = self.prepare_arrays_for_curve_fit(center_lane_boundary, lane_boundary, adjacent_lane_boundary)
+                cubic_curve_factors, _ = curve_fit(cubic_curve_function, x_array, y_array)
+                lane_section['lanes'][lane_id]['cubic_curve_factors_per_width'].append(cubic_curve_factors)
+
+                self.show_cubic_curve_points(lane_identification, cubic_curve_factors, center_lane_boundary, lane_boundary, adjacent_lane_boundary)   
+
+            lane['draw_cubic_curve_points'] = True
+        else: # # 三次曲线点已经显示，隐藏之。
+            self.hide_cubic_curve_points(lane_identification)
+
+            lane['draw_cubic_curve_points'] = False
+
     @classmethod
     def poll(cls, context):
         return context.area.type == 'VIEW_3D'
@@ -123,9 +122,12 @@ class CheckLaneWidthCurveFit(bpy.types.Operator):
             hit, raycast_point, raycast_object = math_utils.raycast_mouse_to_object(context, event, 'lane')
             if hit:
                 name_sections = raycast_object.name.split('_')
-                road_id = int(name_sections[len(name_sections) - 3])
-                selected_road = map_scene_data.get_road_data(road_id)
-                self.check_lane_width(selected_road)
+                last_index = len(name_sections) - 1
+                road_id = int(name_sections[last_index - 2])
+                section_id = int(name_sections[last_index - 1])
+                lane_id = int(name_sections[last_index])
+
+                self.check_lane_width(road_id, section_id, lane_id)
 
             return {'RUNNING_MODAL'}
 
