@@ -4,8 +4,10 @@ import copy
 
 
 from mathutils import geometry, Vector, Matrix
-from math import acos, ceil, radians, dist
+from math import acos, ceil, pi, radians, dist
 from numpy import deg2rad
+
+from . import draw_utils
 from . import math_utils
 from . import road_utils
 
@@ -304,41 +306,36 @@ def intersect_line_curve(line_point_a, line_point_b, curve):
                 return intersected_point
 
         elif element['type'] == 'arc': 
-            origin_point = line_point_a
-            direction = math_utils.vector_subtract(line_point_b, line_point_a)
-            direction.normalize()
-            math_utils.vector_scale_ref(direction, 10000) # 确保line和sphere相交
-            one_side_point = math_utils.vector_add(origin_point, direction)
-            math_utils.vector_scale_ref(direction, -1) # direction反向
-            another_side_point = math_utils.vector_add(origin_point, direction)
-
+            one_side_point, another_side_point = math_utils.generate_infinite_line(line_point_a, line_point_b)
             center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
             intersected_points = geometry.intersect_line_sphere(one_side_point, another_side_point, center_point, arc_radius)
+
             for point in intersected_points:
                 if point != None and check_point_on_element(point, element) == True:
                     return point
+    return None
 
-def check_point_on_element(point, element):
+def check_point_on_element(focal_point, element):
+    if dist(focal_point, element['start_point']) < 0.000001 or dist(focal_point, element['end_point']) < 0.000001: # 当投影点和element的端点重合时，认为该投影点在element上。
+        return True
+
     if element['type'] == 'line':
-        intersected_point_to_line_start_vector = math_utils.vector_subtract(element['start_point'], point)
-        intersected_point_to_line_end_vector = math_utils.vector_subtract(element['end_point'], point)
+        focal_point_to_line_start_vector = math_utils.vector_subtract(element['start_point'], focal_point)
+        focal_point_to_line_end_vector = math_utils.vector_subtract(element['end_point'], focal_point)
         line_start_to_line_end_vector = math_utils.vector_subtract(element['end_point'], element['start_point'])
         # 当投影点坐标在 element['start_point'] 和 element['end_point'] 之间时，返回该投影点坐标；否则投影点无效。
-        if intersected_point_to_line_start_vector.magnitude < line_start_to_line_end_vector.magnitude and intersected_point_to_line_end_vector.magnitude < line_start_to_line_end_vector.magnitude:
+        if focal_point_to_line_start_vector.magnitude < line_start_to_line_end_vector.magnitude and focal_point_to_line_end_vector.magnitude < line_start_to_line_end_vector.magnitude:
             return True
         else:
             return False
 
     elif element['type'] == 'arc': 
-        center_point, arc_radian, arc_radius = get_arc_geometry_info(element)
+        start_point_to_focal_point_vector = math_utils.vector_subtract(focal_point, element['start_point'])
+        end_point_to_focal_point_vector = math_utils.vector_subtract(focal_point, element['end_point'])
+        intersection_angle =  acos(start_point_to_focal_point_vector.dot(end_point_to_focal_point_vector) / (start_point_to_focal_point_vector.magnitude * end_point_to_focal_point_vector.magnitude))
 
         # 当投影点在arc上时，投影点有效；当投影点在arc之外时，投影点无效。
-        center_to_intersection_point_vector = math_utils.vector_subtract(point, center_point)
-        center_to_arc_start_vector = math_utils.vector_subtract(element['start_point'], center_point)
-        center_to_arc_end_vector = math_utils.vector_subtract(element['end_point'], center_point)
-        one_side_normal = center_to_intersection_point_vector.cross(center_to_arc_start_vector)
-        another_side_normal = center_to_intersection_point_vector.cross(center_to_arc_end_vector)
-        if one_side_normal.z * another_side_normal.z < 0:
+        if intersection_angle > pi / 2:
             return True
         else:
             return False
@@ -437,18 +434,13 @@ def merge_reference_line_segment(pre_segment, next_segment):
 
 def get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, target_boundary):
     normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
-    line_length = 30 # 直线长度需足够长，才能保证与curve相交。
     position, tangent = get_position_and_tangent_on_curve_by_distance(center_lane_boundary, curve_distance)
     direction = normal_vector_of_xy_plane.cross(tangent).normalized()
-    one_side_point = math_utils.vector_add(position, math_utils.vector_scale(direction, line_length))
-    another_side_point = math_utils.vector_add(position, math_utils.vector_scale(direction, -line_length))
-    intersected_point_on_target_boundary = intersect_line_curve(one_side_point, another_side_point, target_boundary)
-    return intersected_point_on_target_boundary
+    line_point_a = position
+    line_point_b = math_utils.vector_add(position, direction)
+
+    return intersect_line_curve(line_point_a, line_point_b, target_boundary)
 
 
-        
-
-
-
-
+    
 

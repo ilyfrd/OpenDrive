@@ -97,7 +97,7 @@ class AdjustLaneBoundary(DrawCurveBase):
 
     def create_geometries_for_capturing(self, selected_reference_line_section):
         normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
-        line_length = 30
+        line_length = 10000
         dash_size = 0.5
         gap_size = 0.3
 
@@ -149,8 +149,7 @@ class AdjustLaneBoundary(DrawCurveBase):
 
         if self.selected_lane != None:
             if self.lane_start_reference_line.hide_get() == False:
-                line_direction = math_utils.vector_subtract(self.start_line_another_side_point, self.start_line_one_side_point)
-                start_line_projected_point = math_utils.project_point_onto_line(self.current_selected_point, self.start_line_one_side_point, line_direction)
+                start_line_projected_point = math_utils.project_point_onto_line(self.current_selected_point, self.start_line_one_side_point, self.start_line_another_side_point)
                 draw_utils.draw_point('projected_point_on_start_line', start_line_projected_point) # 更新投影点位置。
                 self.current_selected_point = start_line_projected_point # 捕捉起始点
 
@@ -164,8 +163,7 @@ class AdjustLaneBoundary(DrawCurveBase):
                     line2_point2 = self.end_line_another_side_point
                     end_line_projected_point = geometry.intersect_line_line(line1_point1, line1_point2, line2_point1, line2_point2)[0]
                 elif self.dynamic_element['type'] == 'arc':
-                    line_direction = math_utils.vector_subtract(self.end_line_another_side_point, self.end_line_one_side_point)
-                    end_line_projected_point = math_utils.project_point_onto_line(self.current_selected_point, self.end_line_one_side_point, line_direction)
+                    end_line_projected_point = math_utils.project_point_onto_line(self.current_selected_point, self.end_line_one_side_point, self.end_line_another_side_point)
                 
                 draw_utils.draw_point('projected_point_on_end_line', end_line_projected_point) # 更新投影点位置。
                 self.current_selected_point = end_line_projected_point # 捕捉结束点
@@ -216,6 +214,11 @@ class AdjustLaneBoundary(DrawCurveBase):
                 self.projected_point_on_end_line.hide_set(False)
 
             return {'RUNNING_MODAL'}
+
+        elif event.type in {'ESC'}:
+            self.clean_up(context)
+
+            return {'FINISHED'}
 
         elif event.type in {'WHEELUPMOUSE'}:
             bpy.ops.view3d.zoom(mx=0, my=0, delta=1, use_cursor_init=False)

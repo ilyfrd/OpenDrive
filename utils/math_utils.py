@@ -1,6 +1,8 @@
 
+from math import dist, sqrt, pow
 from mathutils import Vector, geometry
 from bpy_extras.view3d_utils import region_2d_to_origin_3d, region_2d_to_vector_3d
+from . import draw_utils
 from . import basic_element_utils
 
 
@@ -33,11 +35,24 @@ def vector_scale_ref(vector, scale_ratio):
     vector[1] *= scale_ratio
     vector[2] *= scale_ratio
 
-def project_point_onto_line(point, line_start_point, line_direction):
+def intersect_line_sphere_ABANDON(line_a, line_b, sphere_center, sphere_radius): # 太慢，影响交互性。
+    projected_point = project_point_onto_line(sphere_center, line_a, line_b)
+    distance_between_sphere_center_and_projected_point = dist(sphere_center, projected_point)
+
+    if distance_between_sphere_center_and_projected_point < sphere_radius: # 相交
+        distance_between_intersected_point_and_projected_point = sqrt(pow(sphere_radius, 2) - pow(distance_between_sphere_center_and_projected_point, 2))
+        line_direction = vector_subtract(line_a, line_b)
+        line_direction.normalize()
+        intersected_point_a = vector_add(projected_point, vector_scale(line_direction, distance_between_intersected_point_and_projected_point))
+        intersected_point_b = vector_add(projected_point, vector_scale(line_direction, -distance_between_intersected_point_and_projected_point))
+        return [intersected_point_a, intersected_point_b]
+    else:
+        return []
+
+def project_point_onto_line(point, line_start_point, line_end_point):
     '''
     把point投影到由line_start_point和line_direction确定的直线上（无限长直线），得到投影点projected_point。
     '''
-    line_end_point = vector_add(line_start_point, line_direction)
     projected_point = geometry.intersect_point_line(point, line_start_point, line_end_point)[0]
     return projected_point
 
@@ -63,17 +78,22 @@ def project_point_onto_finite_arc(point, arc):
     把point投影到arc上，得到投影点projected_point。
     '''
     center_point, arc_radian, arc_radius = basic_element_utils.get_arc_geometry_info(arc)
+    one_side_point, another_side_point = generate_infinite_line(point, center_point)
+    projected_points = geometry.intersect_line_sphere(one_side_point, another_side_point, center_point, arc_radius)
+    for point in projected_points:
+        if point != None and basic_element_utils.check_point_on_element(point, arc) == True:
+            return point
+    
+    return None
 
-    center_to_current_point_vector = vector_subtract(point, center_point)
-    center_to_current_point_vector.normalize()
-    vector_scale_ref(center_to_current_point_vector, 10000) # 确保center_to_current_point_vector和arc可以相交。
-    point_for_intersection = vector_add(center_point, center_to_current_point_vector)
-    projected_point = geometry.intersect_line_sphere(center_point, point_for_intersection, center_point, arc_radius)[0]
+def generate_infinite_line(line_point_a, line_point_b):
+    origin_point = line_point_a
+    direction = vector_subtract(line_point_b, line_point_a)
+    direction.normalize()
+    one_side_point = vector_add(origin_point, vector_scale(direction, 100))
+    another_side_point = vector_add(origin_point, vector_scale(direction, -100))
 
-    if basic_element_utils.check_point_on_element(projected_point, arc) == True:
-        return projected_point
-    else:
-        return None
+    return one_side_point, another_side_point
 
 def raycast_mouse_to_object(context, event, type):
     '''

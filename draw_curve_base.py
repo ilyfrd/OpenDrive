@@ -49,7 +49,9 @@ class DrawCurveBase(bpy.types.Operator):
                     self.dynamic_element['end_point'] = self.current_selected_point
                 else: # reference_line_elements中已经有static元素了。
                     pre_element = self.reference_line_elements[element_number - 2]
-                    self.dynamic_element['end_point'] = math_utils.project_point_onto_line(self.current_selected_point, pre_element['end_point'], pre_element['end_tangent'])
+                    self.dynamic_element['end_point'] = math_utils.project_point_onto_line(self.current_selected_point, 
+                        pre_element['end_point'], 
+                        math_utils.vector_add(pre_element['end_point'], pre_element['end_tangent']))
 
                 tangent = math_utils.vector_subtract(self.dynamic_element['end_point'], self.dynamic_element['start_point'])
                 self.dynamic_element['start_tangent'] = tangent.copy()

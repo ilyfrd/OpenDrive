@@ -42,7 +42,8 @@ class AdjustCurveFitSections(DrawCurveBase):
 
         intersected_point_on_lane_boundary = basic_element_utils.intersect_line_curve(raycast_point, projected_point, lane_boundary)
         intersected_point_on_adjacent_lane_boundary = basic_element_utils.intersect_line_curve(raycast_point, projected_point, adjacent_lane_boundary)
-        draw_utils.draw_line('dynamic_segmenting_line_for_curve_fitting', intersected_point_on_lane_boundary, intersected_point_on_adjacent_lane_boundary)
+        if intersected_point_on_lane_boundary != None and intersected_point_on_adjacent_lane_boundary != None:
+            draw_utils.draw_line('dynamic_segmenting_line_for_curve_fitting', intersected_point_on_lane_boundary, intersected_point_on_adjacent_lane_boundary)
 
     def remove_dynamic_segmenting_line_for_curve_fitting(self):
         draw_utils.remove_line('dynamic_segmenting_line_for_curve_fitting')
