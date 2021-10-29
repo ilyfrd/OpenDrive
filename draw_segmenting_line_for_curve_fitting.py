@@ -1,12 +1,9 @@
 import bpy
-import copy
 
 from .utils import draw_utils
 from .utils import math_utils
-from .utils import road_utils
-from .utils import basic_element_utils
+from .utils import cubic_curve_fitting_utils
 
-from . import helpers
 from . import map_scene_data
 
 
@@ -44,10 +41,10 @@ class DrawSegmentingLineForCurveFitting(bpy.types.Operator):
                 lane = section['lanes'][lane_id]
 
                 if lane['draw_segmenting_line_for_curve_fitting'] == False: # 分段线尚未显示，显示分段线。
-                    draw_utils.draw_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id)
+                    cubic_curve_fitting_utils.draw_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id)
                     lane['draw_segmenting_line_for_curve_fitting'] = True
                 else: # 分段线已经显示，隐藏分段线。
-                    draw_utils.remove_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id)
+                    cubic_curve_fitting_utils.remove_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id)
                     lane['draw_segmenting_line_for_curve_fitting'] = False
 
             return {'RUNNING_MODAL'}

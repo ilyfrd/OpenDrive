@@ -5,6 +5,8 @@ from mathutils import geometry, Vector, Matrix
 from .utils import draw_utils
 from .utils import math_utils
 from .utils import road_utils
+from .utils import cubic_curve_fitting_utils
+
 from . import helpers
 from . import map_scene_data
 
@@ -91,6 +93,8 @@ class AdjustLaneBoundary(DrawCurveBase):
             elif lane_id == selected_section['right_most_lane_index']:
                 new_lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][lane_id + 1]['boundary_curve_elements'], selected_section['lanes'][lane_id]['boundary_curve_elements'])
             helpers.replace_mesh(self.selected_lane, new_lane_mesh)
+
+            cubic_curve_fitting_utils.update_cubic_curve_factors(selected_section, lane_id)
         
         if self.selected_lane != None:
             self.selected_lane.hide_set(False) # 显示该车道对应的object实物。

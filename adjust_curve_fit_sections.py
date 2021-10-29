@@ -5,6 +5,8 @@ from .utils import draw_utils
 from .utils import math_utils
 from .utils import road_utils
 from .utils import basic_element_utils
+from .utils import cubic_curve_fitting_utils
+
 
 from . import helpers
 from . import map_scene_data
@@ -85,9 +87,7 @@ class AdjustCurveFitSections(DrawCurveBase):
         elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
             if self.lane_id == None: # 尚未选中车道
                 hit, raycast_point, raycast_object = math_utils.raycast_mouse_to_object(context, event, 'lane')
-                if not hit:
-                    return {'RUNNING_MODAL'}
-                else:
+                if hit:
                     name_sections = raycast_object.name.split('_')
                     last_index = len(name_sections) - 1
                     self.road_id = int(name_sections[last_index - 2])
@@ -116,7 +116,10 @@ class AdjustCurveFitSections(DrawCurveBase):
                     curve_fit_sections.append(self.pre_section) 
                     curve_fit_sections.append(self.next_section)
 
-                    draw_utils.draw_static_segmenting_line_for_curve_fitting(self.road_id, self.section_id, self.lane_id)
+                    cubic_curve_fitting_utils.update_cubic_curve_factors(lane_section, self.lane_id)
+                    cubic_curve_fitting_utils.draw_cubic_curve_fitting_result(self.road_id, self.section_id, self.lane_id)
+
+                    cubic_curve_fitting_utils.draw_static_segmenting_line_for_curve_fitting(self.road_id, self.section_id, self.lane_id)
 
             return {'RUNNING_MODAL'}
 
@@ -134,14 +137,19 @@ class AdjustCurveFitSections(DrawCurveBase):
                 curve_fit_sections.pop()
                 curve_fit_sections.append(merged_segment)
 
-                draw_utils.draw_static_segmenting_line_for_curve_fitting(self.road_id, self.section_id, self.lane_id)
+                cubic_curve_fitting_utils.update_cubic_curve_factors(section, self.lane_id)
+                cubic_curve_fitting_utils.draw_cubic_curve_fitting_result(self.road_id, self.section_id, self.lane_id)
+
+                cubic_curve_fitting_utils.draw_static_segmenting_line_for_curve_fitting(self.road_id, self.section_id, self.lane_id)
 
             return {'RUNNING_MODAL'}
 
         elif event.type in {'ESC'}:
             if self.lane_id != None:
+                cubic_curve_fitting_utils.remove_cubic_curve_fitting_result(self.road_id, self.section_id, self.lane_id)
+
                 self.remove_dynamic_segmenting_line_for_curve_fitting()
-                draw_utils.remove_static_segmenting_line_for_curve_fitting(self.road_id, self.section_id, self.lane_id)
+                cubic_curve_fitting_utils.remove_static_segmenting_line_for_curve_fitting(self.road_id, self.section_id, self.lane_id)
 
             bpy.ops.object.select_all(action='DESELECT')
             self.clean_up(context)

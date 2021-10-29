@@ -3,6 +3,8 @@ import math
 import bpy
 
 from math import acos, ceil, radians, dist
+
+from . import cubic_curve_fitting_utils
 from . import basic_element_utils
 
 def construct_default_lane():
@@ -41,6 +43,8 @@ def add_lane(lane_section, direction):
     new_lane['curve_fit_sections'] = [copy.deepcopy(center_lane)]
 
     lane_section['lanes'][new_lane_id] = new_lane
+
+    cubic_curve_fitting_utils.update_cubic_curve_factors(lane_section, new_lane_id)
 
 def remove_lane(lane_section, lane_index):
     lane_section['lanes'].pop(lane_index)

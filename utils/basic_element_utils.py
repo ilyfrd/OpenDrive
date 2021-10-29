@@ -203,7 +203,11 @@ def get_arc_geometry_info(arc_element):
                                                 arc_element['end_point'], 
                                                 end_point_to_center_vector_end_point)[0]
     # 计算arc的弧度值
-    arc_radian =  acos(start_point_to_center_vector.dot(end_point_to_center_vector) / (start_point_to_center_vector.magnitude * end_point_to_center_vector.magnitude))
+    middle_point = arc_element['start_point'] + arc_element['end_point']
+    if dist(middle_point, center_point) < 0.000001 : # 当start_point_to_center_vector和end_point_to_center_vector的夹角非常接近pi的时候，acos函数会溢出。
+        arc_radian = pi
+    else:
+        arc_radian =  acos(start_point_to_center_vector.dot(end_point_to_center_vector) / (start_point_to_center_vector.magnitude * end_point_to_center_vector.magnitude))
 
     arc_radius = math_utils.vector_subtract(arc_element['start_point'], center_point).magnitude
 
