@@ -38,6 +38,7 @@ class DrawRoad(DrawCurveBase):
         road_data = {}
         road_data['reference_line_sections'] = self.reference_line_sections
         road_data['lane_sections'] = self.lane_sections
+
         road_data['lane_to_object_map'] = self.lane_to_object_map
         road_data['road_object'] = self.road_object
 
@@ -102,15 +103,6 @@ class DrawRoad(DrawCurveBase):
         bpy.data.objects.remove(self.lane_to_object_map[(0, 1)], do_unlink=True)
         bpy.data.objects.remove(self.lane_to_object_map[(0, -1)], do_unlink=True)
         bpy.data.objects.remove(self.road_object, do_unlink=True)
-
-    def xxxxxxx(self):
-        for lane_section in self.lane_sections:
-            for lane_id in range(lane_section['left_most_lane_index'], 0, -1):
-                road_utils.create_band_mesh(lane_section['lanes'][lane_id]['boundary_curve_elements'], lane_section['lanes'][lane_id - 1]['boundary_curve_elements'])
-            for lane_id in range(lane_section['right_most_lane_index'], 0, 1):
-                road_utils.create_band_mesh(lane_section['lanes'][lane_id + 1]['boundary_curve_elements'], lane_section['lanes'][lane_id]['boundary_curve_elements'])
-
-
 
     def transform_object_wrt_start(self, obj, point_start, heading):
         '''

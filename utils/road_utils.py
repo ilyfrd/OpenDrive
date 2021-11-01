@@ -192,6 +192,3 @@ def create_band_mesh(up_boundary, down_boundary):
     mesh = bpy.data.meshes.new('lane_mesh')
     mesh.from_pydata(vertices, edges, faces)
     return mesh
-
-
-        

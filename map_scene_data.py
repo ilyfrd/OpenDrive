@@ -5,9 +5,7 @@ def generate_road_id():
     '''
     生成road的唯一id。
     '''
-    global road_id
-    road_id += 1
-    return road_id
+    return len(road_map)
 
 def set_road_data(id, road_data):
     road_map[id] = road_data

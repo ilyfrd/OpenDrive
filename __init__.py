@@ -29,6 +29,10 @@ from . check_lane_width_curve_fit import CheckLaneWidthCurveFit
 from . adjust_curve_fit_sections import AdjustCurveFitSections
 from . draw_segmenting_line_for_curve_fitting import DrawSegmentingLineForCurveFitting
 from . save_map_data import SaveMapData
+from . reload_map_data import ReloadMapData
+
+
+from .utils import export_import_utils
 
 
 
@@ -97,9 +101,11 @@ class DSC_PT_panel_create(bpy.types.Panel):
         row.operator('dsc.draw_segmenting_line_for_curve_fitting', text='显示/隐藏三次曲线拟合分段线', icon_value=custom_icons['road_straight'].icon_id)
 
         innerBox = outerBox.box()
-        innerBox.label(text='导出')
+        innerBox.label(text='导入/导出')
         row = innerBox.row(align=True)
-        row.operator('dsc.save_map_data', text='保存', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.save_map_data', text='保存地图场景', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.reload_map_data', text='加载地图场景', icon_value=custom_icons['road_straight'].icon_id)
 
         # box = layout.box()
         # box.label(text='Export (Track, Scenario, Mesh)')
@@ -121,7 +127,9 @@ classes = (
     CheckLaneWidthCurveFit,
     AdjustCurveFitSections,
     DrawSegmentingLineForCurveFitting,
-    SaveMapData
+    SaveMapData,
+    ReloadMapData,
+    export_import_utils
 )
 
 def register():
@@ -144,6 +152,8 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     # Register property groups
 
+    export_import_utils.read_map_data()
+
 def unregister():
     global custom_icons
     # Unregister export menu
@@ -157,3 +167,5 @@ def unregister():
 
 if __name__ == '__main__':
     register()
+
+
