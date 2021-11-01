@@ -28,6 +28,7 @@ from . draw_junction import DrawJunction
 from . check_lane_width_curve_fit import CheckLaneWidthCurveFit
 from . adjust_curve_fit_sections import AdjustCurveFitSections
 from . draw_segmenting_line_for_curve_fitting import DrawSegmentingLineForCurveFitting
+from . save_map_data import SaveMapData
 
 
 
@@ -95,6 +96,11 @@ class DSC_PT_panel_create(bpy.types.Panel):
         row = innerBox.row(align=True)
         row.operator('dsc.draw_segmenting_line_for_curve_fitting', text='显示/隐藏三次曲线拟合分段线', icon_value=custom_icons['road_straight'].icon_id)
 
+        innerBox = outerBox.box()
+        innerBox.label(text='导出')
+        row = innerBox.row(align=True)
+        row.operator('dsc.save_map_data', text='保存', icon_value=custom_icons['road_straight'].icon_id)
+
         # box = layout.box()
         # box.label(text='Export (Track, Scenario, Mesh)')
         # row = box.row(align=True)
@@ -114,7 +120,8 @@ classes = (
     DrawJunction,
     CheckLaneWidthCurveFit,
     AdjustCurveFitSections,
-    DrawSegmentingLineForCurveFitting
+    DrawSegmentingLineForCurveFitting,
+    SaveMapData
 )
 
 def register():

@@ -15,4 +15,7 @@ def set_road_data(id, road_data):
 def get_road_data(id):
     return road_map.get(id)
 
+def get_map_data():
+    return road_map
+
 
