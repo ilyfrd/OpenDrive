@@ -30,10 +30,9 @@ from . adjust_curve_fit_sections import AdjustCurveFitSections
 from . draw_segmenting_line_for_curve_fitting import DrawSegmentingLineForCurveFitting
 from . save_map_data import SaveMapData
 from . reload_map_data import ReloadMapData
-
+from . export_open_drive_map import ExportOpenDriveMap
 
 from .utils import export_import_utils
-
 
 
 
@@ -106,6 +105,8 @@ class DSC_PT_panel_create(bpy.types.Panel):
         row.operator('dsc.save_map_data', text='保存地图场景', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
         row.operator('dsc.reload_map_data', text='加载地图场景', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.export_open_drive_map', text='导出高精度地图', icon_value=custom_icons['road_straight'].icon_id)
 
         # box = layout.box()
         # box.label(text='Export (Track, Scenario, Mesh)')
@@ -129,7 +130,7 @@ classes = (
     DrawSegmentingLineForCurveFitting,
     SaveMapData,
     ReloadMapData,
-    export_import_utils
+    ExportOpenDriveMap
 )
 
 def register():
