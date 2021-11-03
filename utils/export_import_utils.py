@@ -290,7 +290,7 @@ def export_open_drive_map():
                 if normal_vector.z < 0:
                     arc_radius = -arc_radius
                     
-                arc = xodr.Arc(1 / arc_radius, angle = arc_radian)
+                arc = xodr.Arc(curvature = 1 / arc_radius, length = basic_element_utils.get_element_length(element))
                 planview.add_geometry(arc)
 
         planview.adjust_geometries()
