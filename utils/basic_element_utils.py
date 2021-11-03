@@ -298,7 +298,9 @@ def get_position_and_tangent_on_curve_by_distance(curve, distance):
                 tangent = get_tangent_on_arc_by_distance(element, distance)
                 return position, tangent
 
-def intersect_line_curve(line_point_a, line_point_b, curve):
+def intersect_line_curve(line_point_a, line_point_b, curve, reference_point):
+    candidate_points = []
+
     for element in curve:
         if element['type'] == 'line':
             intersected_point = geometry.intersect_line_line(element['start_point'], 
@@ -307,7 +309,7 @@ def intersect_line_curve(line_point_a, line_point_b, curve):
                                                         line_point_b)[0]
 
             if check_point_on_element(intersected_point, element) == True:
-                return intersected_point
+                candidate_points.append(intersected_point)
 
         elif element['type'] == 'arc': 
             one_side_point, another_side_point = math_utils.generate_infinite_line(line_point_a, line_point_b)
@@ -316,8 +318,17 @@ def intersect_line_curve(line_point_a, line_point_b, curve):
 
             for point in intersected_points:
                 if point != None and check_point_on_element(point, element) == True:
-                    return point
-    return None
+                    candidate_points.append(point)
+    
+    if len(candidate_points) > 0: 
+        result_point = candidate_points[0]
+        for index in range(1, len(candidate_points)):
+            if dist(candidate_points[index], reference_point) < dist(result_point, reference_point):
+                result_point = candidate_points[index]
+
+        return result_point
+    else:
+        return None
 
 def check_point_on_element(focal_point, element):
     if dist(focal_point, element['start_point']) < 0.000001 or dist(focal_point, element['end_point']) < 0.000001: # 当投影点和element的端点重合时，认为该投影点在element上。
@@ -443,7 +454,7 @@ def get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance,
     line_point_a = position
     line_point_b = math_utils.vector_add(position, direction)
 
-    return intersect_line_curve(line_point_a, line_point_b, target_boundary)
+    return intersect_line_curve(line_point_a, line_point_b, target_boundary, line_point_a)
 
 
     

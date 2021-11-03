@@ -17,7 +17,7 @@ class SegmentRoad(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def __init__(self):
-        self.selected_road_id = 0 # 当前选中的road的id。
+        self.selected_road_id = None # 当前选中的road的id。
 
         self.projected_point = None # 记当前光标位置raycast到xy平面上的点为 raycast_point， projected_point即为raycast_point投影到道路参考线上的点的坐标。
         self.pre_section = None
@@ -92,7 +92,7 @@ class SegmentRoad(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         if event.type == 'MOUSEMOVE':
-            if self.selected_road_id != 0:
+            if self.selected_road_id != None:
                 raycast_point = helpers.mouse_to_xy_plane(context, event)
 
                 road_data = map_scene_data.get_road_data(self.selected_road_id)
@@ -107,11 +107,9 @@ class SegmentRoad(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-            if self.selected_road_id == 0: # 尚未选中road
+            if self.selected_road_id == None: # 尚未选中road
                 hit, raycast_point, raycast_object = math_utils.raycast_mouse_to_object(context, event, 'road_reference_line')
-                if not hit:
-                    return {'RUNNING_MODAL'}
-                else:
+                if hit:
                     helpers.select_activate_object(context, raycast_object) # 高亮显示当前选中的道路参考线。
                     name_sections = raycast_object.name.split('_')
                     self.selected_road_id = int(name_sections[len(name_sections) - 1])

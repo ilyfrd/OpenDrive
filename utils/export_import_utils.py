@@ -274,17 +274,23 @@ def export_open_drive_map():
     map_data = map_scene_data.get_map_data()
     for road_id, road_data in map_data.items():
         reference_line_elements = construct_reference_line_elements(copy.deepcopy(road_data['reference_line_sections']))
+        first_element = reference_line_elements[0]
+
         planview = xodr.PlanView()
+        planview.set_start_point(first_element['start_point'].x, first_element['start_point'].y, compute_heading_from_tangent(first_element['start_tangent']))
+
         for element in reference_line_elements:
             if element['type'] == 'line':
-                planview.set_start_point(element['start_point'].x, element['start_point'].y, compute_heading_from_tangent(element['start_tangent']))
                 line = xodr.Line(basic_element_utils.get_element_length(element))
                 planview.add_geometry(line)
-
             elif element['type'] == 'arc':
-                planview.set_start_point(element['start_point'].x, element['start_point'].y, compute_heading_from_tangent(element['start_tangent']))
                 center_point, arc_radian, arc_radius = basic_element_utils.get_arc_geometry_info(element)
-                arc = xodr.Arc(1 / arc_radius, arc_radian)
+
+                normal_vector =  element['start_tangent'].cross(element['end_tangent'])
+                if normal_vector.z < 0:
+                    arc_radius = -arc_radius
+                    
+                arc = xodr.Arc(1 / arc_radius, angle = arc_radian)
                 planview.add_geometry(arc)
 
         planview.adjust_geometries()
@@ -297,17 +303,21 @@ def export_open_drive_map():
             lane_section = lane_sections[index]
 
             centerlane = xodr.Lane(lane_type = xodr.LaneType.median)
+            centerlane.add_roadmark(xodr.STD_ROADMARK_SOLID)
+
             lanesection = xodr.LaneSection(lane_section_s, centerlane)  
 
             left_lane_num = lane_section['left_most_lane_index']
             while left_lane_num > 0:
                 lane = xodr.Lane(xodr.LaneType.driving)
+                lane.add_roadmark(xodr.STD_ROADMARK_SOLID)
                 lanesection.add_left_lane(lane)
                 left_lane_num -= 1
 
             right_lane_num = -lane_section['right_most_lane_index']
             while right_lane_num > 0:
                 lane = xodr.Lane(xodr.LaneType.driving)
+                lane.add_roadmark(xodr.STD_ROADMARK_SOLID)
                 lanesection.add_right_lane(lane)
                 right_lane_num -= 1
 
@@ -315,7 +325,7 @@ def export_open_drive_map():
 
             lane_section_s += basic_element_utils.computer_curve_length(lane_section['lanes'][0]['boundary_curve_elements'])
 
-        road = xodr.Road(road_id, planview, lanes)
+        road = xodr.Road(road_id, planview, lanes, name = str(road_id)) # name不能缺失，否则我们的高精度地图使用端的API无法正常读取地图数据。
         odr.add_road(road)
 
     adjust_xodr_file_data(odr)

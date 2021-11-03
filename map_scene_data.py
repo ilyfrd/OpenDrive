@@ -10,6 +10,9 @@ def generate_road_id():
 def set_road_data(id, road_data):
     road_map[id] = road_data
 
+def remove_road_data(id):
+    road_map.pop(id)
+
 def get_road_data(id):
     return road_map.get(id)
 

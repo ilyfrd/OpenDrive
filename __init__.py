@@ -31,6 +31,7 @@ from . draw_segmenting_line_for_curve_fitting import DrawSegmentingLineForCurveF
 from . save_map_data import SaveMapData
 from . reload_map_data import ReloadMapData
 from . export_open_drive_map import ExportOpenDriveMap
+from . remove_road import RemoveRoad
 
 from .utils import export_import_utils
 
@@ -71,9 +72,11 @@ class DSC_PT_panel_create(bpy.types.Panel):
         outerBox.label(text='Map Primitives')
 
         innerBox = outerBox.box()
-        innerBox.label(text='创建道路')
+        innerBox.label(text='绘制')
         row = innerBox.row(align=True)
         row.operator('dsc.draw_road', text='绘制道路', icon_value=custom_icons['road_straight'].icon_id)
+        row = innerBox.row(align=True)
+        row.operator('dsc.remove_road', text='删除道路', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
         row.operator('dsc.segment_road', text='道路分段', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
@@ -91,7 +94,7 @@ class DSC_PT_panel_create(bpy.types.Panel):
         # row.operator('dsc.edit_junction', text='Edit Junction', icon_value=custom_icons['road_straight'].icon_id)
 
         innerBox = outerBox.box()
-        innerBox.label(text='检查道路')
+        innerBox.label(text='检查')
         row = innerBox.row(align=True)
         row.operator('dsc.check_lane_width_curve_fit', text='车道宽度三次曲线拟合检查', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
@@ -130,7 +133,8 @@ classes = (
     DrawSegmentingLineForCurveFitting,
     SaveMapData,
     ReloadMapData,
-    ExportOpenDriveMap
+    ExportOpenDriveMap,
+    RemoveRoad
 )
 
 def register():
