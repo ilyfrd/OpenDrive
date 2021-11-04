@@ -322,7 +322,7 @@ def intersect_line_curve(line_point_a, line_point_b, curve, reference_point):
     
     if len(candidate_points) > 0: 
         result_point = candidate_points[0]
-        for index in range(1, len(candidate_points)):
+        for index in range(1, len(candidate_points)): # 当出现多个交点时，取距离reference_point最近的点。
             if dist(candidate_points[index], reference_point) < dist(result_point, reference_point):
                 result_point = candidate_points[index]
 
@@ -448,6 +448,10 @@ def merge_reference_line_segment(pre_segment, next_segment):
     return result_segment
 
 def get_interseted_point_at_curve_distance(center_lane_boundary, curve_distance, target_boundary):
+    '''
+    在center_lane_boundary上 s = curve_distance的位置沿 t 方向发出一条射线，得到该射线与target_boundary的交点。
+    此处 s 和 t 的意义对应高精度地图格式中参考线坐标系中 s 坐标和 t 坐标的意义。
+    '''
     normal_vector_of_xy_plane = Vector((0.0, 0.0, 1.0))
     position, tangent = get_position_and_tangent_on_curve_by_distance(center_lane_boundary, curve_distance)
     direction = normal_vector_of_xy_plane.cross(tangent).normalized()

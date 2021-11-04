@@ -42,11 +42,11 @@ def remove_static_segmenting_line_for_curve_fitting(road_id, section_id, lane_id
     draw_utils.remove_line_by_feature('static_segmenting_line_for_curve_fitting_' + str(road_id) + '_' + str(section_id) + '_' + str(lane_id))
 
 def prepare_arrays_for_curve_fit(center_lane_boundary, lane_boundary, adjacent_lane_boundary):
-    x_array = []
-    y_array = []
+    x_array = [] # 保存 s 坐标
+    y_array = [] # 保存车道在采样位置的宽度值
 
     curve_length = basic_element_utils.computer_curve_length(center_lane_boundary)
-    divisions = 20
+    divisions = 20 # 沿center_lane_boundary采样20个点
     sampling_step = curve_length / divisions
 
     def prepare_array_item(curve_distance):
@@ -58,14 +58,14 @@ def prepare_arrays_for_curve_fit(center_lane_boundary, lane_boundary, adjacent_l
             x_array.append(curve_distance)
             y_array.append(sampled_width)
 
-    curve_distance = 0.001 * curve_length
+    curve_distance = 0.001 * curve_length # 从一个非常接近起始点的位置开始采样，避免采样失败。
     prepare_array_item(curve_distance)
 
     for index in range(1, divisions):
         curve_distance = sampling_step * index
         prepare_array_item(curve_distance)
 
-    curve_distance = 0.999 * curve_length
+    curve_distance = 0.999 * curve_length # 从一个非常接近结束点的位置开始采样，避免采样失败。
     prepare_array_item(curve_distance)
 
     return x_array, y_array
@@ -73,7 +73,7 @@ def prepare_arrays_for_curve_fit(center_lane_boundary, lane_boundary, adjacent_l
 def show_cubic_curve_points(lane_identification, cubic_curve_factors, center_lane_boundary, lane_boundary, adjacent_lane_boundary):
     a, b, c, d = cubic_curve_factors
     curve_length = basic_element_utils.computer_curve_length(center_lane_boundary)
-    divisions = 50
+    divisions = 50 # 显示50个拟合结果参考点
     sampling_step = curve_length / divisions
     for index in range(1, divisions):
         curve_distance = sampling_step * index
@@ -119,7 +119,7 @@ def draw_cubic_curve_fitting_result(road_id, section_id, lane_id):
     lane = lane_section['lanes'][lane_id]
 
     lane_identification = str(road_id) + '_' + str(section_id) + '_' + str(lane_id)
-    hide_cubic_curve_points(lane_identification)
+    hide_cubic_curve_points(lane_identification) # 清除之前绘制的拟合结果参考点。
 
     center_lane_boundary = None
     lane_boundary = None

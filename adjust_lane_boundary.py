@@ -94,7 +94,7 @@ class AdjustLaneBoundary(DrawCurveBase):
                 new_lane_mesh = road_utils.create_band_mesh(selected_section['lanes'][lane_id + 1]['boundary_curve_elements'], selected_section['lanes'][lane_id]['boundary_curve_elements'])
             helpers.replace_mesh(self.selected_lane, new_lane_mesh)
 
-            cubic_curve_fitting_utils.update_cubic_curve_factors(selected_section, lane_id)
+            cubic_curve_fitting_utils.update_cubic_curve_factors(selected_section, lane_id) # 车道边界发生了改变，车道宽度的三次曲线拟合系数也应随之更新。
         
         if self.selected_lane != None:
             self.selected_lane.hide_set(False) # 显示该车道对应的object实物。

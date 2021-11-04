@@ -228,6 +228,7 @@ def reload_map_scene(context, file_path):
         bpy.data.objects.remove(object, do_unlink=True)
 
     read_map_data(file_path)
+    
     map_data = map_scene_data.get_map_data()
     for road_id, road_data in map_data.items():
         road_object_name = 'road_object_' + str(road_id)
