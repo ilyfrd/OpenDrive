@@ -187,7 +187,7 @@ def read_lane_sections(lane_sections_src, lane_sections_target):
 
         lane_sections_target.append(lane_section_data)
 
-def save_map_date():
+def save_map_date(file_path):
     map_data = {}
 
     map = map_scene_data.get_map_data()
@@ -204,11 +204,11 @@ def save_map_date():
 
         map_data[str(road_id)] = road_data
         
-    with open('./map_scene_data.json', 'w') as outfile:
+    with open(file_path + str('.json'), 'w') as outfile:
         json.dump(map_data, outfile, indent = 4, cls = NumpyEncoder)
 
-def read_map_data():
-    with open('./map_scene_data.json') as json_file:
+def read_map_data(file_path):
+    with open(file_path) as json_file:
         file_map_data = json.load(json_file)
         for road_id, road_data in file_map_data.items():
             memory_road_data = {}
@@ -223,11 +223,11 @@ def read_map_data():
 
             map_scene_data.set_road_data(int(road_id), memory_road_data)
 
-def reload_map_scene(context):
+def reload_map_scene(context, file_path):
     for object in bpy.context.scene.objects:
         bpy.data.objects.remove(object, do_unlink=True)
 
-    read_map_data()
+    read_map_data(file_path)
     map_data = map_scene_data.get_map_data()
     for road_id, road_data in map_data.items():
         road_object_name = 'road_object_' + str(road_id)
@@ -268,7 +268,7 @@ def reload_map_scene(context):
         object.parent = road_object
         context.scene.collection.objects.link(object)
 
-def export_open_drive_map():
+def export_open_drive_map(file_path):
     odr = xodr.OpenDrive('open_drive_map')
 
     map_data = map_scene_data.get_map_data()
@@ -328,9 +328,9 @@ def export_open_drive_map():
         road = xodr.Road(road_id, planview, lanes, name = str(road_id)) # name不能缺失，否则我们的高精度地图使用端的API无法正常读取地图数据。
         odr.add_road(road)
 
-    adjust_xodr_file_data(odr)
+    adjust_xodr_file_data(odr, file_path)
 
-def adjust_xodr_file_data(odr):
+def adjust_xodr_file_data(odr, file_path):
     open_drive_element = odr.get_element()
 
     road_elements =  open_drive_element.findall('road')
@@ -349,7 +349,7 @@ def adjust_xodr_file_data(odr):
 
     open_drive_element_tree = ET.ElementTree(open_drive_element)
     ET.indent(open_drive_element_tree, space = '    ')
-    open_drive_element_tree.write('./open_drive_map.xodr')
+    open_drive_element_tree.write(file_path + str('.xodr'))
 
 def add_lane_width_routine(lane_element_parent, road_id, section_id):
     lane_elements = lane_element_parent.findall('lane')

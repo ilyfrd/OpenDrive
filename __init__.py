@@ -28,12 +28,15 @@ from . draw_junction import DrawJunction
 from . check_lane_width_curve_fit import CheckLaneWidthCurveFit
 from . adjust_curve_fit_sections import AdjustCurveFitSections
 from . draw_segmenting_line_for_curve_fitting import DrawSegmentingLineForCurveFitting
-from . save_map_data import SaveMapData
-from . reload_map_data import ReloadMapData
+from . save_map_scene import SaveMapScene
+from . open_map_scene import OpenMapScene
 from . export_open_drive_map import ExportOpenDriveMap
 from . remove_road import RemoveRoad
 
 from .utils import export_import_utils
+
+from . import map_scene_data
+
 
 
 
@@ -69,7 +72,7 @@ class DSC_PT_panel_create(bpy.types.Panel):
         layout = self.layout
 
         outerBox = layout.box()
-        outerBox.label(text='Map Primitives')
+        outerBox.label(text='高精度地图制作工具集')
 
         innerBox = outerBox.box()
         innerBox.label(text='绘制')
@@ -105,9 +108,9 @@ class DSC_PT_panel_create(bpy.types.Panel):
         innerBox = outerBox.box()
         innerBox.label(text='导入/导出')
         row = innerBox.row(align=True)
-        row.operator('dsc.save_map_data', text='保存地图场景', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.open_map_scene', text='打开地图场景', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
-        row.operator('dsc.reload_map_data', text='加载地图场景', icon_value=custom_icons['road_straight'].icon_id)
+        row.operator('dsc.save_map_scene', text='保存地图场景', icon_value=custom_icons['road_straight'].icon_id)
         row = innerBox.row(align=True)
         row.operator('dsc.export_open_drive_map', text='导出高精度地图', icon_value=custom_icons['road_straight'].icon_id)
 
@@ -131,8 +134,8 @@ classes = (
     CheckLaneWidthCurveFit,
     AdjustCurveFitSections,
     DrawSegmentingLineForCurveFitting,
-    SaveMapData,
-    ReloadMapData,
+    SaveMapScene,
+    OpenMapScene,
     ExportOpenDriveMap,
     RemoveRoad
 )
@@ -156,8 +159,6 @@ def register():
     # Register export menu
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     # Register property groups
-
-    export_import_utils.read_map_data()
 
 def unregister():
     global custom_icons

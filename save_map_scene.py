@@ -1,12 +1,12 @@
 import bpy
 from bpy.props import StringProperty, BoolProperty 
+
 from .utils import export_import_utils
 
 
 
-
-class ExportOpenDriveMap(bpy.types.Operator):
-    bl_idname = 'dsc.export_open_drive_map'
+class SaveMapScene(bpy.types.Operator):
+    bl_idname = 'dsc.save_map_scene'
     bl_label = '确定'
     bl_options = {'REGISTER'}
 
@@ -21,7 +21,7 @@ class ExportOpenDriveMap(bpy.types.Operator):
         return context.area.type == 'VIEW_3D'
 
     def execute(self, context): 
-        export_import_utils.export_open_drive_map(self.filepath)
+        export_import_utils.save_map_date(self.filepath)
 
         return {'FINISHED'}
 

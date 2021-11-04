@@ -1,13 +1,17 @@
 import bpy
+import os
 from bpy.props import StringProperty, BoolProperty 
+from bpy_extras.io_utils import ImportHelper
+
 from .utils import export_import_utils
 
+from . import map_scene_data
 
 
 
-class ExportOpenDriveMap(bpy.types.Operator):
-    bl_idname = 'dsc.export_open_drive_map'
-    bl_label = '确定'
+class OpenMapScene(bpy.types.Operator): 
+    bl_idname = "dsc.open_map_scene" 
+    bl_label = "确定" 
     bl_options = {'REGISTER'}
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -19,9 +23,9 @@ class ExportOpenDriveMap(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return context.area.type == 'VIEW_3D'
-
+        
     def execute(self, context): 
-        export_import_utils.export_open_drive_map(self.filepath)
+        export_import_utils.reload_map_scene(context, self.filepath)
 
         return {'FINISHED'}
 
