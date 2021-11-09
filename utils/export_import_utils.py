@@ -17,6 +17,8 @@ from . import basic_element_utils
 from . import road_utils
 from .. import map_scene_data
 
+current_opened_map_scene_file = None
+
 class NumpyEncoder(json.JSONEncoder):
     """ Special json encoder for numpy types """
     def default(self, obj):
@@ -31,6 +33,12 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
+def set_current_opened_map_scene_file(file_path):
+    global current_opened_map_scene_file
+    current_opened_map_scene_file = file_path
+
+def get_current_opened_map_scene_file():
+    return current_opened_map_scene_file
 
 def save_element(src, target):
     target['type'] = src['type']
@@ -268,6 +276,8 @@ def reload_map_scene(context, file_path):
         object['type'] = 'road_reference_line'
         object.parent = road_object
         context.scene.collection.objects.link(object)
+
+        road_data['road_reference_line_object'] = object
 
 def export_open_drive_map(file_path):
     odr = xodr.OpenDrive('open_drive_map')

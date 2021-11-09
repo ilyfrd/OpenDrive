@@ -26,6 +26,7 @@ class OpenMapScene(bpy.types.Operator):
         
     def execute(self, context): 
         export_import_utils.reload_map_scene(context, self.filepath)
+        export_import_utils.set_current_opened_map_scene_file(self.filepath)
 
         return {'FINISHED'}
 

@@ -39,6 +39,7 @@ class DrawRoad(DrawCurveBase):
         road_data['reference_line_sections'] = self.reference_line_sections
         road_data['lane_sections'] = self.lane_sections
 
+        road_data['road_reference_line_object'] = self.road_reference_line_object
         road_data['lane_to_object_map'] = self.lane_to_object_map
         road_data['road_object'] = self.road_object
 

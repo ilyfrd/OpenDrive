@@ -33,9 +33,19 @@ class RemoveRoad(bpy.types.Operator):
                 name_sections = raycast_object.name.split('_')
                 last_index = len(name_sections) - 1
                 road_id = int(name_sections[last_index - 2])
+
+                road_data = map_scene_data.get_road_data(road_id)
+                lane_to_object_map = road_data['lane_to_object_map']
+                for key, value in lane_to_object_map.items():
+                    bpy.data.objects.remove(value, do_unlink=True) # 删除车道在场景中的实物object
+
+                road_reference_line_object = road_data['road_reference_line_object']
+                bpy.data.objects.remove(road_reference_line_object, do_unlink=True) # 删除道路参考线在场景中的实物object
+
+                road_object = road_data['road_object']
+                bpy.data.objects.remove(road_object, do_unlink=True) # 删除道路object，道路object只作为一个容器存在，没有mesh。
+                
                 map_scene_data.remove_road_data(road_id)
-                export_import_utils.save_map_date()
-                export_import_utils.reload_map_scene(context)
 
             return {'RUNNING_MODAL'}
 
